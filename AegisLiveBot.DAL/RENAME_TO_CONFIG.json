@@ -1,0 +1,6 @@
+{
+  "comment": "Populate the fields below, token is your discord bot token. Rename the file to config.json",
+  "token": "",
+  "prefix": "",
+  "twitchclientid": ""
+}
