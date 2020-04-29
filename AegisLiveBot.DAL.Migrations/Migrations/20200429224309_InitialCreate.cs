@@ -11,9 +11,9 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    GuildId = table.Column<decimal>(nullable: false),
-                    UserId = table.Column<decimal>(nullable: false),
+                        .Annotation("Sqlite:Autoincrement", true),
+                    GuildId = table.Column<ulong>(nullable: false),
+                    UserId = table.Column<ulong>(nullable: false),
                     TwitchName = table.Column<string>(nullable: true)
                 },
                 constraints: table =>
@@ -26,9 +26,9 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    GuildId = table.Column<decimal>(nullable: false),
-                    RoleId = table.Column<decimal>(nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    GuildId = table.Column<ulong>(nullable: false),
+                    RoleId = table.Column<ulong>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -40,7 +40,7 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                        .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(nullable: true),
                     Value = table.Column<int>(nullable: false)
                 },
