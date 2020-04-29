@@ -37,7 +37,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             }
 
             var json = string.Empty;
-            using (var fs = File.OpenRead("../AegisLiveBot.DAL/config.json"))
+            using (var fs = File.OpenRead("config.json"))
             using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
                 json = sr.ReadToEnd();
             var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
