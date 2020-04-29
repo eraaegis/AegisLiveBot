@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AegisLiveBot.Web", "AegisLiveBot.Web", "{46E30FFD-289F-4140-8396-18C61F2D5644}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AegisLiveBot.Web", "AegisLiveBot.Web\AegisLiveBot.Web.csproj", "{9F61F722-AC04-4BCC-B677-41D525463BAB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AegisLiveBot.DAL", "AegisLiveBot.DAL", "{7BD1C901-9438-4FF9-B757-CDD7BD90FF12}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisLiveBot.DAL", "AegisLiveBot.DAL\AegisLiveBot.DAL.csproj", "{A91ADCB2-DD35-465D-98D7-72596CCDC985}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisLiveBot.DAL.Migrations", "AegisLiveBot.DAL.Migrations\AegisLiveBot.DAL.Migrations.csproj", "{09057C2D-0EE2-4F90-92A9-B109839CF8BB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AegisLiveBot.Core", "AegisLiveBot.Core", "{58E54405-CFDC-4974-92DE-CE445D846997}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisLiveBot.Core", "AegisLiveBot.Core\AegisLiveBot.Core.csproj", "{30CD24BC-46E6-46F2-9AEF-2CBC774FF458}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9F61F722-AC04-4BCC-B677-41D525463BAB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F61F722-AC04-4BCC-B677-41D525463BAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F61F722-AC04-4BCC-B677-41D525463BAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F61F722-AC04-4BCC-B677-41D525463BAB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A91ADCB2-DD35-465D-98D7-72596CCDC985}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A91ADCB2-DD35-465D-98D7-72596CCDC985}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A91ADCB2-DD35-465D-98D7-72596CCDC985}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A91ADCB2-DD35-465D-98D7-72596CCDC985}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09057C2D-0EE2-4F90-92A9-B109839CF8BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09057C2D-0EE2-4F90-92A9-B109839CF8BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09057C2D-0EE2-4F90-92A9-B109839CF8BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09057C2D-0EE2-4F90-92A9-B109839CF8BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30CD24BC-46E6-46F2-9AEF-2CBC774FF458}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30CD24BC-46E6-46F2-9AEF-2CBC774FF458}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30CD24BC-46E6-46F2-9AEF-2CBC774FF458}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30CD24BC-46E6-46F2-9AEF-2CBC774FF458}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9F61F722-AC04-4BCC-B677-41D525463BAB} = {46E30FFD-289F-4140-8396-18C61F2D5644}
+		{A91ADCB2-DD35-465D-98D7-72596CCDC985} = {7BD1C901-9438-4FF9-B757-CDD7BD90FF12}
+		{09057C2D-0EE2-4F90-92A9-B109839CF8BB} = {7BD1C901-9438-4FF9-B757-CDD7BD90FF12}
+		{30CD24BC-46E6-46F2-9AEF-2CBC774FF458} = {58E54405-CFDC-4974-92DE-CE445D846997}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DE028D29-E3AC-4E69-9E83-A8A4B0050EB3}
+	EndGlobalSection
+EndGlobal
