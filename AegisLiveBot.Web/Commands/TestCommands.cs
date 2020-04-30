@@ -14,12 +14,10 @@ namespace AegisLiveBot.Commands
 {
     public class TestCommands : BaseCommandModule
     {
-        private readonly Context _context;
         private readonly DbService _db;
 
-        public TestCommands(Context context, DbService db)
+        public TestCommands(DbService db)
         {
-            _context = context;
             _db = db;
         }
 
@@ -33,22 +31,54 @@ namespace AegisLiveBot.Commands
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task GetTestDB(CommandContext ctx, string name)
         {
-            var testDBs = new TestDBService(_context);
-            var testDB = await testDBs.GetTestDBByName(name).ConfigureAwait(false);
-            if (testDB == null)
+            using (var uow = _db.UnitOfWork())
             {
-                await ctx.Channel.SendMessageAsync($"u dum bitch").ConfigureAwait(false);
-                return;
+                var testDB = uow.TestDBs.GetByName(name);
+                if(testDB == null)
+                {
+                    await ctx.Channel.SendMessageAsync($"Item does not exist!").ConfigureAwait(false);
+                    return;
+                }
+                await ctx.Channel.SendMessageAsync($"Item {testDB.Name} has value {testDB.Value}.").ConfigureAwait(false);
             }
-            await ctx.Channel.SendMessageAsync($"lol here u go: {testDB.Name}, {testDB.Value}").ConfigureAwait(false);
         }
 
         [Command("addtestdb")]
         [RequireUserPermissions(Permissions.ManageRoles)]
-        public async Task AddTestDB(CommandContext ctx, string name, int value)
+        public async Task AddOrUpdateTestDB(CommandContext ctx, string name, int value)
         {
-            var testDBs = new TestDBService(_context);
-            await testDBs.AddTestDb(name, value);
+            using (var uow = _db.UnitOfWork())
+            {
+                var result = uow.TestDBs.AddOrUpdateByNameAndValue(name, value);
+                await uow.SaveAsync().ConfigureAwait(false);
+                var msg = "";
+                if (result)
+                {
+                    msg = $"Item {name} with value {value} has been added to the Test database.";
+                } else
+                {
+                    msg = $"Item {name} has been updated to have value {value}.";
+                }
+                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+            }
+        }
+
+        [Command("listtestdb")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task ListTestDB(CommandContext ctx)
+        {
+            using (var uow = _db.UnitOfWork())
+            {
+                var testDBs = uow.TestDBs.GetAll();
+                var msg = "";
+                var index = 1;
+                foreach(var testDB in testDBs)
+                {
+                    msg += $"{index}. {testDB.Name}: {testDB.Value}\n";
+                    ++index;
+                }
+                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+            }
         }
     }
 }

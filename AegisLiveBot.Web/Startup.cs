@@ -28,12 +28,7 @@ namespace AegisLiveBot.Web
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
 
-            services.AddScoped<ITestDBService, TestDBService>();
-            services.AddScoped<IServerSettingService, ServerSettingService>();
-            services.AddScoped<ILiveUserService, LiveUserService>();
-
             var bot = new LiveBot(services);
-
             services.AddSingleton(bot);
         }
 
