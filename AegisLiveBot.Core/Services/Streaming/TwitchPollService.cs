@@ -39,7 +39,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 {
                     await TryPollTwitchStreams().ConfigureAwait(false);
                 }
-            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
         private async Task TryPollTwitchStreams()
         {
