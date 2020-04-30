@@ -13,6 +13,7 @@ namespace AegisLiveBot.Core.Services.Streaming
         Task<ServerSetting> GetOrCreateServerSetting(ulong guildId);
         Task SetOrReplaceRole(ulong guildId, ulong roleId);
         Task SetOrReplaceTwitchChannel(ulong guildId, ulong chId);
+        Task<bool> TogglePriorityMode(ulong guildId);
     }
     public class ServerSettingService : IServerSettingService
     {
@@ -50,6 +51,19 @@ namespace AegisLiveBot.Core.Services.Streaming
                 _context.ServerSettings.Update(serverSetting);
                 await _context.SaveChangesAsync().ConfigureAwait(false);
             }
+        }
+        public async Task<bool> TogglePriorityMode(ulong guildId)
+        {
+            Console.WriteLine("wtfa");
+            var serverSetting = await GetOrCreateServerSetting(guildId);
+            Console.WriteLine("wtfb");
+            serverSetting.PriorityMode = !serverSetting.PriorityMode;
+            Console.WriteLine("wtfc");
+            _context.ServerSettings.Update(serverSetting);
+            Console.WriteLine("wtfd");
+            await _context.SaveChangesAsync().ConfigureAwait(false);
+            Console.WriteLine("wtfe");
+            return serverSetting.PriorityMode;
         }
     }
 }

@@ -9,5 +9,6 @@ namespace AegisLiveBot.DAL.Models.Streaming
         public ulong GuildId { get; set; }
         public ulong UserId { get; set; }
         public string TwitchName { get; set; }
+        public bool PriorityUser { get; set; }
     }
 }

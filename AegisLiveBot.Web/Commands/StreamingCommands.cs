@@ -40,22 +40,33 @@ namespace AegisLiveBot.Commands
         public async Task GetStreamingRole(CommandContext ctx)
         {
             var serverSetting = await _serverSettingService.GetOrCreateServerSetting(ctx.Guild.Id);
-            if (serverSetting == null)
+            var role = ctx.Guild.Roles.FirstOrDefault(x => x.Value.Id == serverSetting.RoleId).Value;
+            if (role == null)
             {
-                await ctx.Channel.SendMessageAsync($"no role u dum fuck").ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"Live role has not been set!").ConfigureAwait(false);
                 return;
             }
-            var role = ctx.Guild.Roles.FirstOrDefault(x => x.Value.Id == serverSetting.RoleId);
-            await ctx.Channel.SendMessageAsync($"role is: {role.Value.Mention}").ConfigureAwait(false);
+            await ctx.Channel.SendMessageAsync($"Role is: {role.Mention}").ConfigureAwait(false);
         }
         [Command("settwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task SetTwitchChannel(CommandContext ctx, DiscordChannel ch = null)
         {
             var chId = ch != null ? ch.Id : 0;
-            await _serverSettingService.SetOrReplaceTwitchChannel(ctx.Guild.Id, chId);
+            await _serverSettingService.SetOrReplaceTwitchChannel(ctx.Guild.Id, chId).ConfigureAwait(false);
         }
-
+        [Command("toggleprioritymode")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task TogglePriorityMode(CommandContext ctx)
+        {
+            Console.WriteLine("wtf1");
+            var result = await _serverSettingService.TogglePriorityMode(ctx.Guild.Id).ConfigureAwait(false);
+            Console.WriteLine("wtf2");
+            var msg = result ? "on" : "off";
+            Console.WriteLine("wtf3");
+            await ctx.Channel.SendMessageAsync($"Priority mode is now {msg}.");
+            Console.WriteLine("wtf4");
+        }
         [Command("addliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task AddLiveUser(CommandContext ctx, DiscordUser user, string twitchName)
@@ -88,6 +99,20 @@ namespace AegisLiveBot.Commands
                 msg += $"{i+1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
             }
             await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+        }
+        [Command("togglepriorityuser")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task TogglePriorityUser(CommandContext ctx, DiscordUser user)
+        {
+            var liveUser = await _liveUserService.GetLiveUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
+            if(liveUser == null)
+            {
+                await ctx.Channel.SendMessageAsync("User is not registered for streaming role!").ConfigureAwait(false);
+                return;
+            }
+            var result = await _liveUserService.TogglePriorityUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
+            var msg = result ? "now" : "no longer";
+            await ctx.Channel.SendMessageAsync($"{user.Username} is {msg} a priority user.").ConfigureAwait(false);
         }
     }
 }
