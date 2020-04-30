@@ -85,7 +85,7 @@ namespace AegisLiveBot.Commands
             {
                 var liveUser = liveUsers.ElementAt(i);
                 var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                msg += $"{i+1}. {user.DisplayName}, Stream: {liveUser.TwitchName}";
+                msg += $"{i+1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
             }
             await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
