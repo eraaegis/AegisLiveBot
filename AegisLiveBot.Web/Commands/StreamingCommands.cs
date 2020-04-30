@@ -1,6 +1,7 @@
 ﻿using AegisLiveBot.Core.Services;
 using AegisLiveBot.Core.Services.Streaming;
 using AegisLiveBot.DAL;
+using AegisLiveBot.DAL.Repository;
 using AegisLiveBot.Web;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
@@ -16,103 +17,151 @@ namespace AegisLiveBot.Commands
 {
     public class StreamingCommands : BaseCommandModule
     {
-        private readonly Context _context;
-        private ServerSettingService _serverSettingService;
-        private LiveUserService _liveUserService;
+        private readonly DbService _db;
 
-        public StreamingCommands(Context context)
+        public StreamingCommands(Context context, DbService db)
         {
-            _context = context;
-            _serverSettingService = new ServerSettingService(_context);
-            _liveUserService = new LiveUserService(_context, LiveBot.Client);
+            _db = db;
         }
 
         [Command("setstreamingrole")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task SetStreamingRole(CommandContext ctx, DiscordRole discordRole = null)
         {
-            var roleId = discordRole != null ? discordRole.Id : 0;
-            await _serverSettingService.SetOrReplaceRole(ctx.Guild.Id, roleId);
+            using (var uow = _db.UnitOfWork())
+            {
+                var roleId = discordRole != null ? discordRole.Id : 0;
+                uow.ServerSettings.SetStreamingRole(ctx.Guild.Id, roleId);
+                await uow.SaveAsync().ConfigureAwait(false); ;
+                await ctx.Channel.SendMessageAsync($"Live role has been set to {discordRole.Mention}").ConfigureAwait(false);
+            }
         }
 
         [Command("getstreamingrole")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task GetStreamingRole(CommandContext ctx)
         {
-            var serverSetting = await _serverSettingService.GetOrCreateServerSetting(ctx.Guild.Id);
-            var role = ctx.Guild.Roles.FirstOrDefault(x => x.Value.Id == serverSetting.RoleId).Value;
-            if (role == null)
+            using (var uow = _db.UnitOfWork())
             {
-                await ctx.Channel.SendMessageAsync($"Live role has not been set!").ConfigureAwait(false);
-                return;
+                var serverSetting = uow.ServerSettings.GetOrAddByGuildId(ctx.Guild.Id);
+                var role = ctx.Guild.Roles.FirstOrDefault(x => x.Value.Id == serverSetting.RoleId).Value;
+                if (role == null)
+                {
+                    await ctx.Channel.SendMessageAsync($"Live role has not been set!").ConfigureAwait(false);
+                    return;
+                }
+                await ctx.Channel.SendMessageAsync($"Live role is: {role.Mention}").ConfigureAwait(false);
             }
-            await ctx.Channel.SendMessageAsync($"Role is: {role.Mention}").ConfigureAwait(false);
         }
         [Command("settwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task SetTwitchChannel(CommandContext ctx, DiscordChannel ch = null)
         {
-            var chId = ch != null ? ch.Id : 0;
-            await _serverSettingService.SetOrReplaceTwitchChannel(ctx.Guild.Id, chId).ConfigureAwait(false);
+            using (var uow = _db.UnitOfWork())
+            {
+                var chId = ch != null ? ch.Id : 0;
+                uow.ServerSettings.SetTwitchChannel(ctx.Guild.Id, chId);
+                await uow.SaveAsync().ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"Twitch Discord channel has been set to {ch.Mention}").ConfigureAwait(false);
+            }
+        }
+        [Command("gettwitchchannel")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task GetTwitchChannel(CommandContext ctx)
+        {
+            using (var uow = _db.UnitOfWork())
+            {
+                var serverSetting = uow.ServerSettings.GetOrAddByGuildId(ctx.Guild.Id);
+                var ch = ctx.Guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
+                if(ch == null)
+                {
+                    await ctx.Channel.SendMessageAsync($"Twitch Discord channel has not been set!").ConfigureAwait(false);
+                    return;
+                }
+                await ctx.Channel.SendMessageAsync($"Twitch Discord channel: {ch.Mention}").ConfigureAwait(false);
+            }
         }
         [Command("toggleprioritymode")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task TogglePriorityMode(CommandContext ctx)
         {
-            Console.WriteLine("wtf1");
-            var result = await _serverSettingService.TogglePriorityMode(ctx.Guild.Id).ConfigureAwait(false);
-            Console.WriteLine("wtf2");
-            var msg = result ? "on" : "off";
-            Console.WriteLine("wtf3");
-            await ctx.Channel.SendMessageAsync($"Priority mode is now {msg}.");
-            Console.WriteLine("wtf4");
+            using (var uow = _db.UnitOfWork())
+            {
+                var result = uow.ServerSettings.TogglePriorityMode(ctx.Guild.Id);
+                await uow.SaveAsync().ConfigureAwait(false);
+                var msg = result ? "on" : "off";
+                await ctx.Channel.SendMessageAsync($"Priority mode is now {msg}.");
+            }
         }
         [Command("addliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task AddLiveUser(CommandContext ctx, DiscordUser user, string twitchName)
         {
-            await _liveUserService.AddOrReplaceLiveUser(ctx.Guild.Id, user.Id, twitchName);
+            using (var uow = _db.UnitOfWork())
+            {
+                uow.LiveUsers.UpdateTwitchName(ctx.Guild.Id, user.Id, twitchName);
+                await uow.SaveAsync().ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"{user.Mention} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
+            }
         }
 
         [Command("removeliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task RemoveLiveUser(CommandContext ctx, DiscordUser user)
         {
-            await _liveUserService.RemoveLiveUser(ctx.Guild.Id, user.Id);
+            using (var uow = _db.UnitOfWork())
+            {
+                try
+                {
+                    uow.LiveUsers.RemoveByGuildIdUserId(ctx.Guild.Id, user.Id);
+                    await uow.SaveAsync().ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{user.Mention} has been unregistered for streaming role.").ConfigureAwait(false);
+                } catch(Exception e)
+                {
+                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
+                }
+            }
         }
 
         [Command("listliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task ListLiveUser(CommandContext ctx)
         {
-            var liveUsers = _liveUserService.ListLiveUser(ctx.Guild.Id);
-            if(liveUsers.Count() == 0)
+            using (var uow = _db.UnitOfWork())
             {
-                await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
-                return;
+                var liveUsers = uow.LiveUsers.GetAllByGuildId(ctx.Guild.Id);
+                if (liveUsers.Count() == 0)
+                {
+                    await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
+                    return;
+                }
+                var msg = $"Users registered to streaming role:\n";
+                for (var i = 0; i < liveUsers.Count(); ++i)
+                {
+                    var liveUser = liveUsers.ElementAt(i);
+                    var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
+                    msg += $"{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
+                }
+                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
-            var msg = $"Users registered to streaming role:\n";
-            for(var i = 0; i < liveUsers.Count(); ++i)
-            {
-                var liveUser = liveUsers.ElementAt(i);
-                var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                msg += $"{i+1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
-            }
-            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
         [Command("togglepriorityuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task TogglePriorityUser(CommandContext ctx, DiscordUser user)
         {
-            var liveUser = await _liveUserService.GetLiveUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
-            if(liveUser == null)
+            using (var uow = _db.UnitOfWork())
             {
-                await ctx.Channel.SendMessageAsync("User is not registered for streaming role!").ConfigureAwait(false);
-                return;
+                try
+                {
+                    var result = uow.LiveUsers.TogglePriorityUser(ctx.Guild.Id, user.Id);
+                    await uow.SaveAsync().ConfigureAwait(false);
+                    var msg = result ? "now" : "no longer";
+                    await ctx.Channel.SendMessageAsync($"{user.Username} is {msg} a priority user.").ConfigureAwait(false);
+                } catch(RepositoryException e)
+                {
+                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
+                }
             }
-            var result = await _liveUserService.TogglePriorityUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
-            var msg = result ? "now" : "no longer";
-            await ctx.Channel.SendMessageAsync($"{user.Username} is {msg} a priority user.").ConfigureAwait(false);
         }
     }
 }

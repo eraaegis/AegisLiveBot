@@ -12,5 +12,6 @@ namespace AegisLiveBot.DAL.Repository
         void Delete(int id);
         void Delete(TEntity entity);
         void Update(TEntity entity);
+        void AddOrUpdate(TEntity entity);
     }
 }

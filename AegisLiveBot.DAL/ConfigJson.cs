@@ -5,7 +5,7 @@ using System.Text;
 
 namespace AegisLiveBot.DAL
 {
-    public struct ConfigJson
+    public class ConfigJson
     {
         [JsonProperty("token")]
         public string Token { get; private set; }

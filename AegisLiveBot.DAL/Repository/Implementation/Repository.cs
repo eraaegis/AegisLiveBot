@@ -40,5 +40,16 @@ namespace AegisLiveBot.DAL.Repository.Implementation
         {
             _dbset.Update(entity);
         }
+        public void AddOrUpdate(TEntity entity)
+        {
+            TEntity obj = GetById(entity.Id);
+            if (obj == null)
+            {
+                Insert(entity);
+            } else
+            {
+                Update(entity);
+            }
+        }
     }
 }
