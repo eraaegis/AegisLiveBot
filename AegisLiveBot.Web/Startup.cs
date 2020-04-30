@@ -32,9 +32,7 @@ namespace AegisLiveBot.Web
             services.AddScoped<IServerSettingService, ServerSettingService>();
             services.AddScoped<ILiveUserService, LiveUserService>();
 
-            var serviceProvider = services.BuildServiceProvider();
-
-            var bot = new LiveBot(serviceProvider);
+            var bot = new LiveBot(services);
 
             services.AddSingleton(bot);
         }
