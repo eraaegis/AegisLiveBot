@@ -16,6 +16,7 @@ namespace AegisLiveBot.Web
     {
         public static DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
+        private readonly DbService _db;
         public LiveBot(IServiceProvider services)
         {
             var json = string.Empty;
@@ -53,6 +54,9 @@ namespace AegisLiveBot.Web
 
             Commands.RegisterCommands<TestCommands>();
             Commands.RegisterCommands<StreamingCommands>();
+
+            _db = new DbService();
+            _db.GetContext();
 
             Client.ConnectAsync();
         }

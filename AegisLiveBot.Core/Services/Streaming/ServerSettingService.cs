@@ -10,8 +10,9 @@ namespace AegisLiveBot.Core.Services.Streaming
 {
     public interface IServerSettingService
     {
-        Task<ServerSetting> GetServerSetting(ulong guildId);
+        Task<ServerSetting> GetOrCreateServerSetting(ulong guildId);
         Task SetOrReplaceRole(ulong guildId, ulong roleId);
+        Task SetOrReplaceTwitchChannel(ulong guildId, ulong chId);
     }
     public class ServerSettingService : IServerSettingService
     {
@@ -20,23 +21,35 @@ namespace AegisLiveBot.Core.Services.Streaming
         {
             _context = context;
         }
-        public async Task<ServerSetting> GetServerSetting(ulong guildId)
+        public async Task<ServerSetting> GetOrCreateServerSetting(ulong guildId)
         {
-            return await _context.ServerSettings.FirstOrDefaultAsync(x => x.GuildId == guildId).ConfigureAwait(false);
+            var serverSettings = await _context.ServerSettings.FirstOrDefaultAsync(x => x.GuildId == guildId).ConfigureAwait(false);
+            if(serverSettings == null)
+            {
+                await _context.ServerSettings.AddAsync(new ServerSetting { GuildId = guildId }).ConfigureAwait(false);
+                await _context.SaveChangesAsync().ConfigureAwait(false);
+                serverSettings = await _context.ServerSettings.FirstOrDefaultAsync(x => x.GuildId == guildId).ConfigureAwait(false);
+            }
+            return serverSettings;
         }
         public async Task SetOrReplaceRole(ulong guildId, ulong roleId)
         {
-            var serverSetting = await GetServerSetting(guildId);
-            if (serverSetting == null)
-            {
-                await _context.ServerSettings.AddAsync(new ServerSetting { GuildId = guildId, RoleId = roleId }).ConfigureAwait(false);
-            }
-            else
-            {
+            var serverSetting = await GetOrCreateServerSetting(guildId);
+            if (serverSetting != null) {
                 serverSetting.RoleId = roleId;
                 _context.ServerSettings.Update(serverSetting);
+                await _context.SaveChangesAsync().ConfigureAwait(false);
             }
-            await _context.SaveChangesAsync().ConfigureAwait(false);
+        }
+        public async Task SetOrReplaceTwitchChannel(ulong guildId, ulong chId)
+        {
+            var serverSetting = await GetOrCreateServerSetting(guildId);
+            if (serverSetting != null)
+            {
+                serverSetting.TwitchChannelId = chId;
+                _context.ServerSettings.Update(serverSetting);
+                await _context.SaveChangesAsync().ConfigureAwait(false);
+            }
         }
     }
 }
