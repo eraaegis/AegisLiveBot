@@ -29,16 +29,17 @@ namespace AegisLiveBot.Commands
 
         [Command("setstreamingrole")]
         [RequireUserPermissions(Permissions.ManageRoles)]
-        public async Task SetStreamingRole(CommandContext ctx, DiscordRole discordRole)
+        public async Task SetStreamingRole(CommandContext ctx, DiscordRole discordRole = null)
         {
-            await _serverSettingService.SetOrReplaceRole(ctx.Guild.Id, discordRole.Id);
+            var roleId = discordRole != null ? discordRole.Id : 0;
+            await _serverSettingService.SetOrReplaceRole(ctx.Guild.Id, roleId);
         }
 
         [Command("getstreamingrole")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task GetStreamingRole(CommandContext ctx)
         {
-            var serverSetting = await _serverSettingService.GetServerSetting(ctx.Guild.Id);
+            var serverSetting = await _serverSettingService.GetOrCreateServerSetting(ctx.Guild.Id);
             if (serverSetting == null)
             {
                 await ctx.Channel.SendMessageAsync($"no role u dum fuck").ConfigureAwait(false);
@@ -46,6 +47,13 @@ namespace AegisLiveBot.Commands
             }
             var role = ctx.Guild.Roles.FirstOrDefault(x => x.Value.Id == serverSetting.RoleId);
             await ctx.Channel.SendMessageAsync($"role is: {role.Value.Mention}").ConfigureAwait(false);
+        }
+        [Command("settwitchchannel")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task SetTwitchChannel(CommandContext ctx, DiscordChannel ch = null)
+        {
+            var chId = ch != null ? ch.Id : 0;
+            await _serverSettingService.SetOrReplaceTwitchChannel(ctx.Guild.Id, chId);
         }
 
         [Command("addliveuser")]

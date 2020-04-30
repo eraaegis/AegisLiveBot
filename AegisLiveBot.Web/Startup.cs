@@ -18,9 +18,12 @@ namespace AegisLiveBot.Web
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            var builder = new SqliteConnectionStringBuilder("Data Source=database.db");
+            builder.DataSource = Path.Combine(AppContext.BaseDirectory, builder.DataSource);
+
             services.AddDbContext<Context>(options =>
             {
-                options.UseSqlite(Path.Combine("Data Source=database.db"),
+                options.UseSqlite(builder.ToString(),
                     x => x.MigrationsAssembly("AegisLiveBot.DAL.Migrations"));
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             });
