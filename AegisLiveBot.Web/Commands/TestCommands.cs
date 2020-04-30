@@ -15,10 +15,12 @@ namespace AegisLiveBot.Commands
     public class TestCommands : BaseCommandModule
     {
         private readonly Context _context;
+        private readonly DbService _db;
 
-        public TestCommands(Context context)
+        public TestCommands(Context context, DbService db)
         {
             _context = context;
+            _db = db;
         }
 
         [Command("ping")]

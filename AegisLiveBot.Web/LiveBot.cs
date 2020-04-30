@@ -9,6 +9,9 @@ using System.IO;
 using Newtonsoft.Json;
 using AegisLiveBot.Commands;
 using AegisLiveBot.DAL;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using AegisLiveBot.Core.Services;
 
 namespace AegisLiveBot.Web
 {
@@ -16,8 +19,7 @@ namespace AegisLiveBot.Web
     {
         public static DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
-        private readonly DbService _db;
-        public LiveBot(IServiceProvider services)
+        public LiveBot(IServiceCollection services)
         {
             var json = string.Empty;
 
@@ -40,6 +42,9 @@ namespace AegisLiveBot.Web
 
             Client.Ready += OnClientReady;
 
+            services.AddSingleton(provider => new DbService());
+            var serviceProvider = services.BuildServiceProvider();
+
             var commandsConfig = new CommandsNextConfiguration
             {
                 StringPrefixes = new string[] { configJson.Prefix },
@@ -47,16 +52,13 @@ namespace AegisLiveBot.Web
                 EnableMentionPrefix = true,
                 DmHelp = true,
                 IgnoreExtraArguments = true,
-                Services = services
+                Services = serviceProvider
             };
 
             Commands = Client.UseCommandsNext(commandsConfig);
 
             Commands.RegisterCommands<TestCommands>();
             Commands.RegisterCommands<StreamingCommands>();
-
-            _db = new DbService();
-            _db.GetContext();
 
             Client.ConnectAsync();
         }
