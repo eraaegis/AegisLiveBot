@@ -135,12 +135,13 @@ namespace AegisLiveBot.Commands
                     await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
                     return;
                 }
-                var msg = $"Users registered to streaming role:\n";
+                var msg = $"Users registered to streaming role (Star indicates priority):\n";
                 for (var i = 0; i < liveUsers.Count(); ++i)
                 {
                     var liveUser = liveUsers.ElementAt(i);
                     var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                    msg += $"{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
+                    var priority = liveUser.PriorityUser ? "*" : "";
+                    msg += $"{priority}{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
                 }
                 await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
