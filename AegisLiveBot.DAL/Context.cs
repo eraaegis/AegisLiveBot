@@ -1,4 +1,5 @@
 ﻿using AegisLiveBot.DAL.Models;
+using AegisLiveBot.DAL.Models.Fun;
 using AegisLiveBot.DAL.Models.Streaming;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -17,5 +18,6 @@ namespace AegisLiveBot.DAL
         public DbSet<TestDB> TestDBs { get; set; }
         public DbSet<ServerSetting> ServerSettings { get; set; }
         public DbSet<LiveUser> LiveUsers { get; set; }
+        public DbSet<RoastMsg> RoastMsgs { get; set; }
     }
 }

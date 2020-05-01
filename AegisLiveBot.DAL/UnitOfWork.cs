@@ -16,6 +16,8 @@ namespace AegisLiveBot.DAL
         public IServerSettingRepository ServerSettings => _serverSettings ?? (_serverSettings = new ServerSettingRepository(_context));
         private ILiveUserRepository _liveUsers;
         public ILiveUserRepository LiveUsers => _liveUsers ?? (_liveUsers = new LiveUserRepository(_context));
+        private IRoastMsgRepository _roastMsgs;
+        public IRoastMsgRepository RoastMsgs => _roastMsgs ?? (_roastMsgs = new RoastMsgRepository(_context));
 
         public UnitOfWork(Context context)
         {

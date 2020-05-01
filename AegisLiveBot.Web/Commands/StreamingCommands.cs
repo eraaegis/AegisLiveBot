@@ -19,7 +19,7 @@ namespace AegisLiveBot.Commands
     {
         private readonly DbService _db;
 
-        public StreamingCommands(Context context, DbService db)
+        public StreamingCommands(DbService db)
         {
             _db = db;
         }

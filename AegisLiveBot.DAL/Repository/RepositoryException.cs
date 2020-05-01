@@ -18,4 +18,16 @@ namespace AegisLiveBot.DAL.Repository
     {
         public UserNotRegisteredException() : base("User not registered for streaming role!") { }
     }
+    public class NoRoastMsgException : RepositoryException
+    {
+        public NoRoastMsgException() : base("does not realize that this bot does not roast people.") { }
+    }
+    public class ZeroOrNegativeRoastException : RepositoryException
+    {
+        public ZeroOrNegativeRoastException() : base("has got to be trolling.") { }
+    }
+    public class OutOfRangeRoastException : RepositoryException
+    {
+        public OutOfRangeRoastException(int index) : base($"is bigger than {index} buddy.") { }
+    }
 }
