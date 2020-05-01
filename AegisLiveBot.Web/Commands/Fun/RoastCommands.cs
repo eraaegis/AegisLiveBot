@@ -48,7 +48,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                 {
                     var msg = uow.RoastMsgs.GetRandomByGuildId(ctx.Guild.Id);
                     var victim = user ?? ctx.User;
-                    await ctx.Channel.SendMessageAsync($"{victim.Mention}{msg.Msg}").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{victim.Mention} {msg.Msg}").ConfigureAwait(false);
                 } catch(Exception e)
                 {
                     await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
