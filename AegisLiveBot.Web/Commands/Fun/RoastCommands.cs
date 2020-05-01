@@ -78,6 +78,7 @@ namespace AegisLiveBot.Web.Commands.Fun
             }
         }
         [Command("deleteroast")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task DeleteRoast(CommandContext ctx, int msgId)
         {
             using (var uow = _db.UnitOfWork())
