@@ -15,6 +15,7 @@ using AegisLiveBot.Core.Services;
 using System.Linq;
 using System.Reflection;
 using AegisLiveBot.Core.Services.Streaming;
+using AegisLiveBot.Web.Commands.Fun;
 
 namespace AegisLiveBot.Web
 {
@@ -71,6 +72,7 @@ namespace AegisLiveBot.Web
 
             Commands.RegisterCommands<TestCommands>();
             Commands.RegisterCommands<StreamingCommands>();
+            Commands.RegisterCommands<RoastCommands>();
 
             Client.ConnectAsync();
 
