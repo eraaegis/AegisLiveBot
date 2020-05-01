@@ -21,7 +21,7 @@ namespace AegisLiveBot.Web
 {
     public class LiveBot
     {
-        public static DiscordClient Client { get; private set; }
+        public DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
         private readonly ConfigJson _configJson;
         private IServiceProvider _serviceProvider;
