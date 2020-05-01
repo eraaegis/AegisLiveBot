@@ -16,6 +16,7 @@ using System.Linq;
 using System.Reflection;
 using AegisLiveBot.Core.Services.Streaming;
 using AegisLiveBot.Web.Commands.Fun;
+using DSharpPlus.Interactivity;
 
 namespace AegisLiveBot.Web
 {
@@ -23,6 +24,7 @@ namespace AegisLiveBot.Web
     {
         public DiscordClient Client { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
+        public InteractivityExtension Interactivity { get; private set; }
         private readonly ConfigJson _configJson;
         private IServiceProvider _serviceProvider;
         private Dictionary<Type, object> _services = new Dictionary<Type, object>();
@@ -49,6 +51,11 @@ namespace AegisLiveBot.Web
 
             Client.Ready += OnClientReady;
 
+            Client.UseInteractivity(new InteractivityConfiguration
+            {
+                Timeout = TimeSpan.FromMinutes(5)
+            });
+
             var db = new DbService();
             services.AddSingleton(db);
             services.AddSingleton(Client);
@@ -73,6 +80,7 @@ namespace AegisLiveBot.Web
             Commands.RegisterCommands<TestCommands>();
             Commands.RegisterCommands<StreamingCommands>();
             Commands.RegisterCommands<RoastCommands>();
+            Commands.RegisterCommands<TaflCommands>();
 
             Client.ConnectAsync();
 

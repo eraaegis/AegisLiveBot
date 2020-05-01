@@ -18,15 +18,6 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             }
             return roastMsgs;
         }
-        public RoastMsg GetRandomByGuildId(ulong guildId)
-        {
-            var roastMsgs = GetAllByGuildId(guildId);
-            if(roastMsgs.Count() == 0)
-            {
-                throw new NoRoastMsgException();
-            }
-            return roastMsgs.ElementAt(AegisLiveBotRandom.RandomNumber(0, roastMsgs.Count()));
-        }
         public void AddByGuildId(ulong guildId, string msg)
         {
             _dbset.Add(new RoastMsg { GuildId = guildId, Msg = msg });

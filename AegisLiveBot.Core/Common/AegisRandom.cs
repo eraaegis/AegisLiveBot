@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AegisLiveBot.DAL
+namespace AegisLiveBot.Core.Common
 {
-    public static class AegisLiveBotRandom
+    public static class AegisRandom
     {
         private static readonly Random random = new Random();
         private static readonly object randLock = new object();

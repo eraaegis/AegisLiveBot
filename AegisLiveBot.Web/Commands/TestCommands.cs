@@ -1,4 +1,5 @@
-﻿using AegisLiveBot.Core.Services;
+﻿using AegisLiveBot.Core.Common;
+using AegisLiveBot.Core.Services;
 using AegisLiveBot.DAL;
 using AegisLiveBot.DAL.Models;
 using DSharpPlus;
@@ -25,6 +26,7 @@ namespace AegisLiveBot.Commands
         public async Task Ping(CommandContext ctx)
         {
             await ctx.Channel.SendMessageAsync("Pong").ConfigureAwait(false);
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("gettestdb")]
@@ -37,10 +39,12 @@ namespace AegisLiveBot.Commands
                 if(testDB == null)
                 {
                     await ctx.Channel.SendMessageAsync($"Item does not exist!").ConfigureAwait(false);
-                    return;
+                } else
+                {
+                    await ctx.Channel.SendMessageAsync($"Item {testDB.Name} has value {testDB.Value}.").ConfigureAwait(false);
                 }
-                await ctx.Channel.SendMessageAsync($"Item {testDB.Name} has value {testDB.Value}.").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("addtestdb")]
@@ -61,6 +65,7 @@ namespace AegisLiveBot.Commands
                 }
                 await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("listtestdb")]
@@ -79,6 +84,7 @@ namespace AegisLiveBot.Commands
                 }
                 await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
     }
 }

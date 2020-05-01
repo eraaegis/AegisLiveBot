@@ -1,4 +1,5 @@
-﻿using AegisLiveBot.Core.Services;
+﻿using AegisLiveBot.Core.Common;
+using AegisLiveBot.Core.Services;
 using AegisLiveBot.Core.Services.Streaming;
 using AegisLiveBot.DAL;
 using AegisLiveBot.DAL.Repository;
@@ -35,6 +36,7 @@ namespace AegisLiveBot.Commands
                 await uow.SaveAsync().ConfigureAwait(false); ;
                 await ctx.Channel.SendMessageAsync($"Live role has been set to {discordRole.Mention}").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("getstreamingrole")]
@@ -48,10 +50,12 @@ namespace AegisLiveBot.Commands
                 if (role == null)
                 {
                     await ctx.Channel.SendMessageAsync($"Live role has not been set!").ConfigureAwait(false);
-                    return;
+                } else
+                {
+                    await ctx.Channel.SendMessageAsync($"Live role is: {role.Mention}").ConfigureAwait(false);
                 }
-                await ctx.Channel.SendMessageAsync($"Live role is: {role.Mention}").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("settwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -64,6 +68,7 @@ namespace AegisLiveBot.Commands
                 await uow.SaveAsync().ConfigureAwait(false);
                 await ctx.Channel.SendMessageAsync($"Twitch Discord channel has been set to {ch.Mention}").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("gettwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -76,10 +81,12 @@ namespace AegisLiveBot.Commands
                 if(ch == null)
                 {
                     await ctx.Channel.SendMessageAsync($"Twitch Discord channel has not been set!").ConfigureAwait(false);
-                    return;
+                } else
+                {
+                    await ctx.Channel.SendMessageAsync($"Twitch Discord channel: {ch.Mention}").ConfigureAwait(false);
                 }
-                await ctx.Channel.SendMessageAsync($"Twitch Discord channel: {ch.Mention}").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("toggleprioritymode")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -92,6 +99,7 @@ namespace AegisLiveBot.Commands
                 var msg = result ? "on" : "off";
                 await ctx.Channel.SendMessageAsync($"Priority mode is now {msg}.");
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("addliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -103,6 +111,7 @@ namespace AegisLiveBot.Commands
                 await uow.SaveAsync().ConfigureAwait(false);
                 await ctx.Channel.SendMessageAsync($"{user.Mention} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("removeliveuser")]
@@ -121,6 +130,7 @@ namespace AegisLiveBot.Commands
                     await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
                 }
             }
+            ctx.Message.DeleteAfter(3);
         }
 
         [Command("listliveuser")]
@@ -133,18 +143,20 @@ namespace AegisLiveBot.Commands
                 if (liveUsers.Count() == 0)
                 {
                     await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
-                    return;
-                }
-                var msg = $"Users registered to streaming role (Star indicates priority):\n";
-                for (var i = 0; i < liveUsers.Count(); ++i)
+                } else
                 {
-                    var liveUser = liveUsers.ElementAt(i);
-                    var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                    var priority = liveUser.PriorityUser ? "*" : "";
-                    msg += $"{priority}{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
+                    var msg = $"Users registered to streaming role (Star indicates priority):\n";
+                    for (var i = 0; i < liveUsers.Count(); ++i)
+                    {
+                        var liveUser = liveUsers.ElementAt(i);
+                        var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
+                        var priority = liveUser.PriorityUser ? "*" : "";
+                        msg += $"{priority}{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
+                    }
+                    await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
                 }
-                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("togglepriorityuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -163,6 +175,7 @@ namespace AegisLiveBot.Commands
                     await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
                 }
             }
+            ctx.Message.DeleteAfter(3);
         }
     }
 }
