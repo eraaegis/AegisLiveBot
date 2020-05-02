@@ -20,6 +20,9 @@
     <None Update="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Data\Fun\taflConfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Images\Tafl\king.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

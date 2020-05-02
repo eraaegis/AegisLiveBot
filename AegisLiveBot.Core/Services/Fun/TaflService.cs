@@ -2,10 +2,13 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static AegisLiveBot.Core.Services.Fun.TaflService.Board;
@@ -34,96 +37,162 @@ namespace AegisLiveBot.Core.Services.Fun
         }
         public static TaflImage Instance { get { return lazy.Value; } }
     }
-    public interface ITaflConfiguration
+    public class PointConverter : JsonConverter
     {
-        int GetSize();
-        List<Point> GetBlackPositions();
-        List<Point> GetWhitePositions();
-        bool IsStrongKing();
-        bool IsWinOnCorner();
-        bool IsCornerRestricted();
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(Point);
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var obj = JToken.Load(reader);
+            if(obj.Type == JTokenType.Array)
+            {
+                var arr = (JArray)obj;
+                if (arr.Count == 2 && arr.All(token => token.Type == JTokenType.Integer))
+                {
+                    return new Point(arr[0].Value<int>(), arr[1].Value<int>());
+                }
+            }
+            return null;
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
     }
-    public class SaamiTablut : ITaflConfiguration
+    public class TaflConfiguration
     {
-        public int GetSize()
-        {
-            return 9;
-        }
-        public List<Point> GetBlackPositions()
-        {
-            return new List<Point> { new Point(3, 0), new Point(4, 0), new Point(5, 0), new Point(4, 1),
-            new Point(0, 3), new Point(0, 4), new Point(0, 5), new Point(1, 4),
-            new Point(8, 3), new Point(8, 4), new Point(8, 5), new Point(7, 4),
-            new Point(3, 8), new Point(4, 8), new Point(5, 8), new Point(4, 7)};
-        }
-        public List<Point> GetWhitePositions()
-        {
-            return new List<Point> { new Point(4, 2), new Point(4, 3), new Point(2, 4), new Point(3, 4),
-            new Point(5, 4), new Point(6, 4), new Point(4, 5), new Point(4, 6)};
-        }
-        public bool IsStrongKing()
-        {
-            return false;
-        }
-        public bool IsWinOnCorner()
-        {
-            return false;
-        }
-        public bool IsCornerRestricted()
-        {
-            return false;
-        }
+        [JsonProperty("name")]
+        public string Name { get; private set; }
+        [JsonProperty("size")]
+        public int Size { get; private set; }
+        [JsonProperty("blackPositions")]
+        public List<Point> BlackPositions { get; private set; }
+        [JsonProperty("whitePositions")]
+        public List<Point> WhitePositions { get; private set; }
+        [JsonProperty("strongKing")]
+        public bool StrongKing { get; private set; }
+        [JsonProperty("winOnCorner")]
+        public bool WinOnCorner { get; private set; }
+        [JsonProperty("cornerRestricted")]
+        public bool CornerRestricted { get; private set; }
     }
     public class TaflService
     {
-        private readonly ITaflConfiguration TaflConfiguration;
+        private TaflConfiguration TaflConfiguration;
         private Board TaflBoard;
-        private readonly FontFamily _fontFamily;
-        private readonly Font _font;
-        private readonly SolidBrush _solidBrush;
+        private FontFamily _fontFamily;
+        private Font _font;
+        private SolidBrush _solidBrush;
         private const int _tileSize = 64;
 
-        public readonly Image _background;
-        public readonly Image _boardIndex;
+        public Image _background;
+        public Image _boardIndex;
 
-        private readonly DiscordChannel _ch;
-        private readonly DiscordMember _blackPlayer;
-        private readonly DiscordMember _whitePlayer;
-        private readonly DiscordClient _client;
-        private readonly string _tempPath;
+        private DiscordChannel _ch;
+        private DiscordMember _blackPlayer;
+        private DiscordMember _whitePlayer;
+        private DiscordClient _client;
+        private string _tempPath;
 
         private const int _secondsToDelete = 60;
         internal Piece CurrentPlayer { get; private set; }
 
-        public TaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
+        private TaflService()
         {
-            TaflConfiguration = new SaamiTablut();
-            TaflBoard = new Board(TaflConfiguration, this);
-            _fontFamily = new FontFamily("Arial");
-            _font = new Font(_fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
-            _solidBrush = new SolidBrush(Color.DarkGray);
 
-            _tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Tafl", tempName);
-            Directory.CreateDirectory(_tempPath);
+        }
+        public static async Task<TaflService> CreateTaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
+        {
+            var taflService = new TaflService();
 
-            _background = DrawBoard();
-            _boardIndex = DrawBoardIndex();
-            _ch = ch;
+            taflService._fontFamily = new FontFamily("Arial");
+            taflService._font = new Font(taflService._fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
+            taflService._solidBrush = new SolidBrush(Color.DarkGray);
+            taflService._tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Tafl", tempName);
+            Directory.CreateDirectory(taflService._tempPath);
+            taflService._ch = ch;
 
             if (AegisRandom.RandomBool())
             {
-                _blackPlayer = p1;
-                _whitePlayer = p2;
+                taflService._blackPlayer = p1;
+                taflService._whitePlayer = p2;
             } else
             {
-                _blackPlayer = p2;
-                _whitePlayer = p1;
+                taflService._blackPlayer = p2;
+                taflService._whitePlayer = p1;
             }
-            _client = client;
+            taflService._client = client;
+
+            taflService.TaflConfiguration = await taflService.PickBoard(p1).ConfigureAwait(false);
+            taflService.TaflBoard = new Board(taflService.TaflConfiguration, taflService);
+            taflService._background = taflService.DrawBoard();
+            taflService._boardIndex = taflService.DrawBoardIndex();
+
+            return taflService;
+        }
+        private async Task<TaflConfiguration> PickBoard(DiscordMember picker)
+        {
+            var json = string.Empty;
+
+            using (var fs = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Data/Fun/taflConfig.json")))
+            {
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                {
+                    json = sr.ReadToEnd();
+                }
+            }
+
+            var configurations = JObject.Parse(json);
+            var configurationsList = configurations["configurations"].ToString();
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            {
+                Converters = new List<JsonConverter> { new PointConverter() }
+            };
+            var taflConfigurations = JsonConvert.DeserializeObject<List<TaflConfiguration>>(configurationsList);
+            var msg = $"Select one of the following configurations.\n";
+            for(var i = 0; i < taflConfigurations.Count; ++i)
+            {
+                msg += $"{i + 1}. {taflConfigurations.ElementAt(i).Name}\n";
+            }
+            await _ch.SendMessageAsync(msg).ConfigureAwait(false);
+            var interactivity = _client.GetInteractivity();
+            while (true)
+            {
+                var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == picker.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                var result = response.Result.Content;
+                var index = 0;
+                bool isIndex = int.TryParse(result, out index);
+                TaflConfiguration selected = null;
+                if (isIndex)
+                {
+                    if(index > 0 && index <= taflConfigurations.Count)
+                    {
+                        selected = taflConfigurations.ElementAt(index - 1);
+                    } else
+                    {
+                        await _ch.SendMessageAsync($"Please specify a valid index.").ConfigureAwait(false);
+                        continue;
+                    }
+                } else
+                {
+                    taflConfigurations.FirstOrDefault(x => x.Name.ToLower() == result.ToLower());
+                }
+                if(selected == null)
+                {
+                    await _ch.SendMessageAsync($"Please specify a valid name.").ConfigureAwait(false);
+                    continue;
+                }
+                await _ch.SendMessageAsync($"{selected.Name} has been selected.").ConfigureAwait(false);
+                return selected;
+            }
         }
         private Image DrawBoard()
         {
-            var size = TaflConfiguration.GetSize();
+            var size = TaflConfiguration.Size;
             var boardImage = new Bitmap(size * _tileSize, size * _tileSize);
             using (Graphics g = Graphics.FromImage(boardImage))
             {
@@ -135,7 +204,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                 }
                 g.DrawImage(TaflImage.Instance._tileDark, new Point((size / 2) * _tileSize, (size / 2) * _tileSize));
-                if (TaflConfiguration.IsCornerRestricted())
+                if (TaflConfiguration.CornerRestricted)
                 {
                     g.DrawImage(TaflImage.Instance._tileDark, new Point(0, 0));
                     g.DrawImage(TaflImage.Instance._tileDark, new Point(0, (size - 1) * _tileSize));
@@ -152,7 +221,7 @@ namespace AegisLiveBot.Core.Services.Fun
         }
         private Image DrawBoardIndex()
         {
-            var size = TaflConfiguration.GetSize();
+            var size = TaflConfiguration.Size;
             var boardIndex = new Bitmap(size * _tileSize, size * _tileSize);
             boardIndex.MakeTransparent();
             using (Graphics g = Graphics.FromImage(boardIndex))
@@ -172,7 +241,7 @@ namespace AegisLiveBot.Core.Services.Fun
         }
         private string Draw()
         {
-            var size = TaflConfiguration.GetSize();
+            var size = TaflConfiguration.Size;
             var boardImage = new Bitmap(size * _tileSize, size * _tileSize);
             var tiles = TaflBoard.GetTiles();
             using(Graphics g = Graphics.FromImage(boardImage))
@@ -227,7 +296,7 @@ namespace AegisLiveBot.Core.Services.Fun
             {
                 throw new StringToPointException();
             }
-            var size = TaflConfiguration.GetSize();
+            var size = TaflConfiguration.Size;
             var point = new Point(x, size - y);
             if(point.X < 0 || point.Y < 0 || point.X >= size || point.Y >= size)
             {
@@ -356,12 +425,12 @@ namespace AegisLiveBot.Core.Services.Fun
             private bool KingRestricted;
             private bool OpponentNoMoves;
 
-            internal Board(ITaflConfiguration taflConfiguration, TaflService parent)
+            internal Board(TaflConfiguration taflConfiguration, TaflService parent)
             {
                 _parent = parent;
-                Size = taflConfiguration.GetSize();
-                WinOnCorner = taflConfiguration.IsWinOnCorner();
-                StrongKing = taflConfiguration.IsStrongKing();
+                Size = taflConfiguration.Size;
+                WinOnCorner = taflConfiguration.WinOnCorner;
+                StrongKing = taflConfiguration.StrongKing;
                 Tiles = new List<List<Tile>>();
                 for (var i = 0; i < Size; ++i)
                 {
@@ -375,19 +444,19 @@ namespace AegisLiveBot.Core.Services.Fun
                 Tiles[Size / 2][Size / 2].Restricted = true;
                 Tiles[Size / 2][Size / 2].Piece = Piece.King;
                 KingPosition = new Point(Size / 2, Size / 2);
-                if (taflConfiguration.IsCornerRestricted())
+                if (taflConfiguration.CornerRestricted)
                 {
                     Tiles[0][0].Restricted = true;
                     Tiles[0][Size - 1].Restricted = true;
                     Tiles[Size - 1][0].Restricted = true;
                     Tiles[Size - 1][Size - 1].Restricted = true;
                 }
-                var blackPositions = taflConfiguration.GetBlackPositions();
+                var blackPositions = taflConfiguration.BlackPositions;
                 foreach (var blackPosition in blackPositions)
                 {
                     Tiles[blackPosition.Y][blackPosition.X].Piece = Piece.Black;
                 }
-                var whitePositions = taflConfiguration.GetWhitePositions();
+                var whitePositions = taflConfiguration.WhitePositions;
                 foreach (var whitePosition in whitePositions)
                 {
                     Tiles[whitePosition.Y][whitePosition.X].Piece = Piece.White;
