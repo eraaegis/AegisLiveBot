@@ -15,5 +15,19 @@ namespace AegisLiveBot.Core.Common
                 return random.Next(min, max);
             }
         }
+        public static bool RandomBool()
+        {
+            lock (randLock)
+            {
+                var i = random.Next(0, 2);
+                if(i == 0)
+                {
+                    return false;
+                } else
+                {
+                    return true;
+                }
+            }
+        }
     }
 }

@@ -1,65 +1,17 @@
-﻿using System;
+﻿using AegisLiveBot.Core.Common;
+using DSharpPlus;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
+using static AegisLiveBot.Core.Services.Fun.TaflService.Board;
 
 namespace AegisLiveBot.Core.Services.Fun
 {
-    public enum Piece
-    {
-        Empty,
-        White,
-        Black,
-        King
-    }
-    public class Tile
-    {
-        public bool Restricted = false;
-        public Piece Piece = Piece.Empty;
-    }
-    public class Board
-    {
-        private List<List<Tile>> Tiles;
-
-        public Board(ITaflConfiguration taflConfiguration)
-        {
-            var size = taflConfiguration.GetSize();
-            Tiles = new List<List<Tile>>();
-            for(var i = 0; i < size; ++i)
-            {
-                var row = new List<Tile>();
-                for (var j = 0; j < size; ++j)
-                {
-                    row.Add(new Tile());
-                }
-                Tiles.Add(row);
-            }
-            Tiles[size / 2][size / 2].Restricted = true;
-            Tiles[size / 2][size / 2].Piece = Piece.King;
-            if (taflConfiguration.IsCornerRestricted())
-            {
-                Tiles[0][0].Restricted = true;
-                Tiles[0][size - 1].Restricted = true;
-                Tiles[size - 1][0].Restricted = true;
-                Tiles[size - 1][size - 1].Restricted = true;
-            }
-            var blackPositions = taflConfiguration.GetBlackPositions();
-            foreach(var blackPosition in blackPositions)
-            {
-                Tiles[blackPosition.X][blackPosition.Y].Piece = Piece.Black;
-            }
-            var whitePositions = taflConfiguration.GetWhitePositions();
-            foreach(var whitePosition in whitePositions)
-            {
-                Tiles[whitePosition.X][whitePosition.Y].Piece = Piece.White;
-            }
-        }
-        public List<List<Tile>> GetTiles()
-        {
-            return Tiles;
-        }
-    }
     public interface ITaflConfiguration
     {
         int GetSize();
@@ -106,7 +58,7 @@ namespace AegisLiveBot.Core.Services.Fun
     public class TaflService : ITaflService
     {
         private readonly ITaflConfiguration TaflConfiguration;
-        private Board Board;
+        private Board TaflBoard;
         private readonly FontFamily _fontFamily;
         private readonly Font _font;
         private readonly SolidBrush _solidBrush;
@@ -119,12 +71,18 @@ namespace AegisLiveBot.Core.Services.Fun
         private readonly Image _black;
         private const int _tileSize = 64;
 
-        public TaflService()
+        private readonly DiscordChannel _ch;
+        private readonly DiscordMember _blackPlayer;
+        private readonly DiscordMember _whitePlayer;
+        private readonly DiscordClient _client;
+        internal Piece CurrentPlayer { get; private set; }
+
+        public TaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client)
         {
             TaflConfiguration = new SaamiTablut();
-            Board = new Board(TaflConfiguration);
+            TaflBoard = new Board(TaflConfiguration, this);
             _fontFamily = new FontFamily("Arial");
-            _font = new Font(_fontFamily, 16, FontStyle.Bold, GraphicsUnit.Pixel);
+            _font = new Font(_fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
             _solidBrush = new SolidBrush(Color.DarkGray);
 
             var imageFolderPath = $"../AegisLiveBot.DAL/Images/Tafl";
@@ -135,6 +93,18 @@ namespace AegisLiveBot.Core.Services.Fun
             _black = Image.FromFile(Path.Combine(imageFolderPath, "pawn_black.png"));
             _background = DrawBoard();
             _boardIndex = DrawBoardIndex();
+            _ch = ch;
+
+            if (AegisRandom.RandomBool())
+            {
+                _blackPlayer = p1;
+                _whitePlayer = p2;
+            } else
+            {
+                _blackPlayer = p2;
+                _whitePlayer = p1;
+            }
+            _client = client;
         }
         private Image DrawBoard()
         {
@@ -159,7 +129,11 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
                 boardImage.Save(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/background.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
             }
-            return Image.FromFile(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/background.jpg"));
+            Image img;
+            using(var temp = new Bitmap(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/background.jpg")))
+            {
+                return img = new Bitmap(temp);
+            }
         }
         private Image DrawBoardIndex()
         {
@@ -170,18 +144,22 @@ namespace AegisLiveBot.Core.Services.Fun
             {
                 for (var i = 0; i < size; ++i)
                 {
-                    g.DrawString(i.ToString(), _font, _solidBrush, new Point(0, 24 + (size - i - 1) * _tileSize));
-                    g.DrawString(((char)('a' + i)).ToString(), _font, _solidBrush, new Point(24 + i * _tileSize, 44 + (size - 1) * _tileSize));
+                    g.DrawString((i + 1).ToString(), _font, _solidBrush, new Point(0, 20 + (size - i - 1) * _tileSize));
+                    g.DrawString(((char)('a' + i)).ToString(), _font, _solidBrush, new Point(20 + i * _tileSize, 36 + (size - 1) * _tileSize));
                 }
                 boardIndex.Save(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/boardIndex.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
-            return Image.FromFile(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/boardIndex.png"));
+            Image img;
+            using (var temp = new Bitmap(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/boardIndex.png")))
+            {
+                return img = new Bitmap(temp);
+            }
         }
-        public void Draw()
+        private string Draw()
         {
             var size = TaflConfiguration.GetSize();
             var boardImage = new Bitmap(size * _tileSize, size * _tileSize);
-            var tiles = Board.GetTiles();
+            var tiles = TaflBoard.GetTiles();
             using(Graphics g = Graphics.FromImage(boardImage))
             {
                 g.DrawImage(_background, new Point(0, 0));
@@ -189,13 +167,13 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     for (int x = 0; x < size; ++x)
                     {
-                        if(tiles[x][y].Piece == Piece.White)
+                        if(tiles[y][x].Piece == Piece.White)
                         {
                             g.DrawImage(_white, new Point(x * _tileSize, y * _tileSize));
-                        } else if(tiles[x][y].Piece == Piece.Black)
+                        } else if(tiles[y][x].Piece == Piece.Black)
                         {
                             g.DrawImage(_black, new Point(x * _tileSize, y * _tileSize));
-                        } else if(tiles[x][y].Piece == Piece.King)
+                        } else if(tiles[y][x].Piece == Piece.King)
                         {
                             g.DrawImage(_king, new Point(x * _tileSize, y * _tileSize));
                         }
@@ -204,7 +182,362 @@ namespace AegisLiveBot.Core.Services.Fun
                 g.DrawImage(_boardIndex, new Point(0, 0));
                 var tempPath = Path.Combine(AppContext.BaseDirectory, "Images/Tafl");
                 Directory.CreateDirectory(tempPath);
-                boardImage.Save(Path.Combine(tempPath, "temp.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
+                var filePath = Path.Combine(tempPath, "temp.jpg");
+                boardImage.Save(filePath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                return filePath;
+            }
+        }
+        private Point TryStringToPoint(string s)
+        {
+            var x = -1;
+            var y = -1;
+            var i = 0;
+            if (s.Length > i && char.IsLetter(s[i]))
+            {
+                var c = s[i];
+                ++i;
+                x = int.Parse((c - 'a').ToString());
+            } else
+            {
+                throw new StringToPointException();
+            }
+            var yString = "";
+            while (s.Length > i && char.IsDigit(s[i]))
+            {
+                yString += s[i];
+                ++i;
+            }
+            try
+            {
+                y = int.Parse(yString);
+            } catch(Exception)
+            {
+                throw new StringToPointException();
+            }
+            var size = TaflConfiguration.GetSize();
+            var point = new Point(x, size - y);
+            if(point.X < 0 || point.Y < 0 || point.X >= size || point.Y >= size)
+            {
+                throw new PointOutOfBoundsException();
+            }
+            return point;
+        }
+
+        private async Task<bool> TryMove(string response)
+        {
+            var responseList = response.Split(" ");
+            if(responseList.Length == 0)
+            {
+                return false;
+            }
+            if(responseList[0] == "move")
+            {
+                if(responseList.Length < 3)
+                {
+                    return false;
+                }
+                try
+                {
+                    var piece = TryStringToPoint(responseList[1]);
+                    var location = TryStringToPoint(responseList[2]);
+                    TaflBoard.TryMove(piece, location);
+                    return true;
+                } catch(Exception e)
+                {
+                    await _ch.SendMessageAsync(e.Message).ConfigureAwait(false);
+                }
+            }
+            return false;
+        }
+        public void Start()
+        {
+            Task.Run(async () =>
+            {
+                var interactivity = _client.GetInteractivity();
+                var board = Draw();
+                await _ch.SendFileAsync(board).ConfigureAwait(false);
+                await _ch.SendMessageAsync($"{_blackPlayer.DisplayName}(Black) goes first!").ConfigureAwait(false);
+
+                CurrentPlayer = Piece.Black;
+                var curPlayer = _blackPlayer;
+                while (true)
+                {
+                    var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == curPlayer.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                    var isMove = await TryMove(response.Result.Content.ToLower()).ConfigureAwait(false);
+                    while (!isMove)
+                    {
+                        response = await interactivity.WaitForMessageAsync(x => x.Author.Id == curPlayer.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                        isMove = await TryMove(response.Result.Content.ToLower()).ConfigureAwait(false);
+                    }
+                    board = Draw();
+                    await _ch.SendFileAsync(board).ConfigureAwait(false);
+                    var color = CurrentPlayer == Piece.Black ? "Black" : "White";
+                    if (TaflBoard.HasWin())
+                    {
+                        await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color}) has won the game!").ConfigureAwait(false);
+                        break;
+                    }
+                    if (CurrentPlayer == Piece.Black)
+                    {
+                        CurrentPlayer = Piece.White;
+                        curPlayer = _whitePlayer;
+                        color = "White";
+                    } else
+                    {
+                        CurrentPlayer = Piece.Black;
+                        curPlayer = _blackPlayer;
+                        color = "Black";
+                    }
+                    await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color})'s turn to move!").ConfigureAwait(false);
+                }
+            });
+        }
+        internal class Board
+        {
+            private readonly TaflService _parent;
+            private readonly int Size;
+            private readonly bool WinOnCorner;
+            private List<List<Tile>> Tiles;
+            private Point KingPosition;
+            private bool KingCaptured;
+            private bool StrongKing;
+            private bool KingRestricted;
+
+            internal Board(ITaflConfiguration taflConfiguration, TaflService parent)
+            {
+                _parent = parent;
+                Size = taflConfiguration.GetSize();
+                WinOnCorner = taflConfiguration.IsWinOnCorner();
+                StrongKing = taflConfiguration.IsStrongKing();
+                Tiles = new List<List<Tile>>();
+                for (var i = 0; i < Size; ++i)
+                {
+                    var row = new List<Tile>();
+                    for (var j = 0; j < Size; ++j)
+                    {
+                        row.Add(new Tile());
+                    }
+                    Tiles.Add(row);
+                }
+                Tiles[Size / 2][Size / 2].Restricted = true;
+                Tiles[Size / 2][Size / 2].Piece = Piece.King;
+                KingPosition = new Point(Size / 2, Size / 2);
+                if (taflConfiguration.IsCornerRestricted())
+                {
+                    Tiles[0][0].Restricted = true;
+                    Tiles[0][Size - 1].Restricted = true;
+                    Tiles[Size - 1][0].Restricted = true;
+                    Tiles[Size - 1][Size - 1].Restricted = true;
+                }
+                var blackPositions = taflConfiguration.GetBlackPositions();
+                foreach (var blackPosition in blackPositions)
+                {
+                    Tiles[blackPosition.Y][blackPosition.X].Piece = Piece.Black;
+                }
+                var whitePositions = taflConfiguration.GetWhitePositions();
+                foreach (var whitePosition in whitePositions)
+                {
+                    Tiles[whitePosition.Y][whitePosition.X].Piece = Piece.White;
+                }
+            }
+            internal List<List<Tile>> GetTiles()
+            {
+                return Tiles;
+            }
+            internal void TryMove(Point piece, Point location)
+            {
+                if(piece == location)
+                {
+                    throw new InvalidMoveException();
+                }
+                var toMove = Tiles[piece.Y][piece.X];
+                if((_parent.CurrentPlayer == Piece.Black && toMove.Piece == Piece.Black) ||
+                    (_parent.CurrentPlayer == Piece.White && (toMove.Piece == Piece.White || toMove.Piece == Piece.King)))
+                {
+                    if(piece.X != location.X && piece.Y != location.Y)
+                    {
+                        throw new InvalidMoveException();
+                    }
+                    if(piece.X == location.X) // move vertical
+                    {
+                        var i = piece.Y;
+                        while(i != location.Y)
+                        {
+                            _ = location.Y > i ? ++i : --i;
+                            if (Tiles[i][piece.X].Piece != Piece.Empty)
+                            {
+                                throw new InvalidMoveException();
+                            }
+                        }
+                        if(Tiles[i][piece.X].Restricted == true && toMove.Piece != Piece.King)
+                        {
+                            throw new InvalidMoveException();
+                        }
+                    } else // move horizontal
+                    {
+                        var i = piece.X;
+                        while (i != location.X)
+                        {
+                            _ = location.X > i ? ++i : --i;
+                            if (Tiles[piece.Y][i].Piece != Piece.Empty)
+                            {
+                                throw new InvalidMoveException();
+                            }
+                        }
+                        if (Tiles[piece.Y][i].Restricted == true && toMove.Piece != Piece.King)
+                        {
+                            throw new InvalidMoveException();
+                        }
+                    }
+                    Tiles[location.Y][location.X].Piece = toMove.Piece;
+                    if (toMove.Piece == Piece.King) // update king location
+                    {
+                        KingPosition.X = location.X;
+                        KingPosition.Y = location.Y;
+                        // check if king is on or next to throne
+                        if (Tiles[Size / 2][Size / 2].Piece == Piece.King ||
+                            Tiles[Size / 2 - 1][Size / 2].Piece == Piece.King ||
+                            Tiles[Size / 2][Size / 2 - 1].Piece == Piece.King ||
+                            Tiles[Size / 2 + 1][Size / 2].Piece == Piece.King ||
+                            Tiles[Size / 2][Size / 2 + 1].Piece == Piece.King)
+                        {
+                            KingRestricted = true;
+                        } else
+                        {
+                            KingRestricted = false;
+                        }
+                    }
+                    toMove.Piece = Piece.Empty;
+                } else
+                {
+                    throw new InvalidPieceException();
+                }
+                Capture(location);
+            }
+            internal bool HasWin()
+            {
+                if((!WinOnCorner && (KingPosition.X == 0 || KingPosition.X == Size - 1 || KingPosition.Y == 0 || KingPosition.Y == Size - 1)) ||
+                    (KingPosition.X == 0 && KingPosition.Y == 0) ||
+                    (KingPosition.X == Size - 1 && KingPosition.Y == 0) ||
+                    (KingPosition.X == 0 && KingPosition.Y == Size - 1) ||
+                    (KingPosition.X == Size - 1 && KingPosition.Y == Size - 1) || KingCaptured)
+                {
+                    return true;
+                }
+                return false;
+            }
+            internal void Capture(Point pieceLoc)
+            {
+                // up
+                if (pieceLoc.Y > 1) // cannot capture if piece is not at least 2 squares away from edge
+                {
+                    var otherLoc = new Point(pieceLoc.X, pieceLoc.Y - 1);
+                    CheckPieceCapture(otherLoc, true);
+                }
+                // left
+                if (pieceLoc.X > 1)
+                {
+                    var otherLoc = new Point(pieceLoc.X - 1, pieceLoc.Y);
+                    CheckPieceCapture(otherLoc, false);
+                }
+                // right
+                if (pieceLoc.X < Size - 2)
+                {
+                    var otherLoc = new Point(pieceLoc.X + 1, pieceLoc.Y);
+                    CheckPieceCapture(otherLoc, false);
+                }
+                // down
+                if (pieceLoc.Y < Size - 2)
+                {
+                    var otherLoc = new Point(pieceLoc.X, pieceLoc.Y + 1);
+                    CheckPieceCapture(otherLoc, true);
+                }
+            }
+            internal void CheckPieceCapture(Point pieceLoc, bool isVertical, bool strongKingSecondCheck = false)
+            {
+                var tile = Tiles[pieceLoc.Y][pieceLoc.X];
+                if (tile.Piece == Piece.Empty)
+                {
+                    return;
+                }
+                if (isVertical)
+                {
+                    if(pieceLoc.Y > 0 && pieceLoc.Y < Size - 1)
+                    {
+                        var upTile = Tiles[pieceLoc.Y - 1][pieceLoc.X];
+                        var downTile = Tiles[pieceLoc.Y + 1][pieceLoc.X];
+                        if (IsDifferentColor(tile, upTile) && IsDifferentColor(tile, downTile))
+                        {
+                            if((StrongKing || KingRestricted) && tile.Piece == Piece.King && !strongKingSecondCheck)
+                            {
+                                CheckPieceCapture(pieceLoc, !isVertical, true);
+                            } else
+                            {
+                                if(tile.Piece == Piece.King)
+                                {
+                                    KingCaptured = true;
+                                }
+                                tile.Piece = Piece.Empty;
+                            }
+                        }
+                    }
+                } else
+                {
+                    if (pieceLoc.X > 0 && pieceLoc.X < Size - 1)
+                    {
+                        var leftTile = Tiles[pieceLoc.Y][pieceLoc.X - 1];
+                        var rightTile = Tiles[pieceLoc.Y][pieceLoc.X + 1];
+                        if (IsDifferentColor(tile, leftTile) && IsDifferentColor(tile, rightTile))
+                        {
+                            if ((StrongKing || KingRestricted) && tile.Piece == Piece.King && !strongKingSecondCheck)
+                            {
+                                CheckPieceCapture(pieceLoc, !isVertical, true);
+                            }
+                            else
+                            {
+                                if (tile.Piece == Piece.King)
+                                {
+                                    KingCaptured = true;
+                                }
+                                tile.Piece = Piece.Empty;
+                            }
+                        }
+                    }
+                }
+            }
+            internal Piece GetColor(Tile tile)
+            {
+                if (tile.Piece == Piece.White || tile.Piece == Piece.King)
+                {
+                    return Piece.White;
+                }
+                else
+                {
+                    return tile.Piece;
+                }
+            }
+            internal bool IsDifferentColor(Tile tile, Tile otherTile)
+            {
+                if ((GetColor(tile) != GetColor(otherTile) && tile.Piece != Piece.Empty && otherTile.Piece != Piece.Empty) ||
+                    (GetColor(tile) == Piece.Empty && tile.Restricted) || // also checks if restricted for capture
+                    (GetColor(otherTile) == Piece.Empty && otherTile.Restricted))
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            internal enum Piece
+            {
+                Empty,
+                White,
+                Black,
+                King
+            }
+            internal class Tile
+            {
+                internal bool Restricted = false;
+                internal Piece Piece = Piece.Empty;
             }
         }
     }
