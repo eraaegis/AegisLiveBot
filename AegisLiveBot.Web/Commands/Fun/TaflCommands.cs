@@ -34,6 +34,11 @@ namespace AegisLiveBot.Web.Commands.Fun
             while (true)
             {
                 var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == otherUser.Id && x.ChannelId == ctx.Channel.Id).ConfigureAwait(false);
+                if (response.TimedOut)
+                {
+                    await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
+                    return;
+                }
                 var responseMsg = response.Result.Content.ToLower();
                 response.Result.DeleteAfter(3);
                 if(responseMsg == "accept")
@@ -51,8 +56,20 @@ namespace AegisLiveBot.Web.Commands.Fun
             }
             try
             {
-                var taflService = new TaflService(ctx.Channel, ctx.Member, otherUser, ctx.Client);
-                taflService.Start();
+                using (var uow = _db.UnitOfWork())
+                {
+                    var serverSetting = uow.ServerSettings.GetOrAddByGuildId(ctx.Guild.Id);
+                    var catId = serverSetting.GamesCategory;
+                    var cat = ctx.Guild.GetChannel(catId);
+                    var tempName = Path.GetRandomFileName();
+                    var chName = $"Tafl Game {tempName}";
+                    var ch = await ctx.Guild.CreateChannelAsync(chName, ChannelType.Text, cat).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(ctx.Member, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(otherUser, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
+                    var taflService = new TaflService(ch, ctx.Member, otherUser, ctx.Client, tempName);
+                    taflService.Start();
+                }
             } catch(Exception e)
             {
                 await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);

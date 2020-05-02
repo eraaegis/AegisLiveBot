@@ -75,15 +75,21 @@ namespace AegisLiveBot.Core.Services.Fun
         private readonly DiscordMember _blackPlayer;
         private readonly DiscordMember _whitePlayer;
         private readonly DiscordClient _client;
+        private readonly string _tempPath;
+
+        private const int _secondsToDelete = 60;
         internal Piece CurrentPlayer { get; private set; }
 
-        public TaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client)
+        public TaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
         {
             TaflConfiguration = new SaamiTablut();
             TaflBoard = new Board(TaflConfiguration, this);
             _fontFamily = new FontFamily("Arial");
             _font = new Font(_fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
             _solidBrush = new SolidBrush(Color.DarkGray);
+
+            _tempPath = Path.Combine(Path.GetTempPath(), tempName);
+            Directory.CreateDirectory(_tempPath);
 
             var imageFolderPath = $"../AegisLiveBot.DAL/Images/Tafl";
             _tile = Image.FromFile(Path.Combine(imageFolderPath, "tile.jpg"));
@@ -127,10 +133,10 @@ namespace AegisLiveBot.Core.Services.Fun
                     g.DrawImage(_tileDark, new Point((size - 1) * _tileSize, 0));
                     g.DrawImage(_tileDark, new Point((size - 1) * _tileSize, (size - 1) * _tileSize));
                 }
-                boardImage.Save(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/background.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
+                boardImage.Save(Path.Combine(_tempPath, "background.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
             }
             Image img;
-            using(var temp = new Bitmap(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/background.jpg")))
+            using(var temp = new Bitmap(Path.Combine(_tempPath, "background.jpg")))
             {
                 return img = new Bitmap(temp);
             }
@@ -147,10 +153,10 @@ namespace AegisLiveBot.Core.Services.Fun
                     g.DrawString((i + 1).ToString(), _font, _solidBrush, new Point(0, 20 + (size - i - 1) * _tileSize));
                     g.DrawString(((char)('a' + i)).ToString(), _font, _solidBrush, new Point(20 + i * _tileSize, 36 + (size - 1) * _tileSize));
                 }
-                boardIndex.Save(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/boardIndex.png"), System.Drawing.Imaging.ImageFormat.Png);
+                boardIndex.Save(Path.Combine(_tempPath, "boardIndex.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
             Image img;
-            using (var temp = new Bitmap(Path.Combine(AppContext.BaseDirectory, "Images/Tafl/boardIndex.png")))
+            using (var temp = new Bitmap(Path.Combine(_tempPath, "boardIndex.png")))
             {
                 return img = new Bitmap(temp);
             }
@@ -180,9 +186,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                 }
                 g.DrawImage(_boardIndex, new Point(0, 0));
-                var tempPath = Path.Combine(AppContext.BaseDirectory, "Images/Tafl");
-                Directory.CreateDirectory(tempPath);
-                var filePath = Path.Combine(tempPath, "temp.jpg");
+                var filePath = Path.Combine(_tempPath, "temp.jpg");
                 boardImage.Save(filePath, System.Drawing.Imaging.ImageFormat.Jpeg);
                 return filePath;
             }
@@ -246,6 +250,17 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     await _ch.SendMessageAsync(e.Message).ConfigureAwait(false);
                 }
+            } else if(responseList[0] == "help")
+            {
+                var msg = $"To move pieces, use the following command: move <piece> <location>\n";
+                msg += $"Example: move e2 d2";
+                await _ch.SendMessageAsync(msg).ConfigureAwait(false);
+            } else if(responseList[0] == "quit")
+            {
+                var msg = $"The channel will be deleted momentarily.";
+                await _ch.SendMessageAsync(msg).ConfigureAwait(false);
+                await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
+                await Dispose().ConfigureAwait(false);
             }
             return false;
         }
@@ -262,12 +277,23 @@ namespace AegisLiveBot.Core.Services.Fun
                 var curPlayer = _blackPlayer;
                 while (true)
                 {
-                    var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == curPlayer.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
-                    var isMove = await TryMove(response.Result.Content.ToLower()).ConfigureAwait(false);
+                    var afk = false;
+                    var isMove = false;
                     while (!isMove)
                     {
-                        response = await interactivity.WaitForMessageAsync(x => x.Author.Id == curPlayer.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                        var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == curPlayer.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                        if (response.TimedOut)
+                        {
+                            await _ch.SendMessageAsync($"This channel will be deleted soon unless there is activity.").ConfigureAwait(false);
+                            if (afk)
+                            {
+                                await Dispose().ConfigureAwait(false);
+                            }
+                            afk = true;
+                            continue;
+                        }
                         isMove = await TryMove(response.Result.Content.ToLower()).ConfigureAwait(false);
+                        afk = false;
                     }
                     board = Draw();
                     await _ch.SendFileAsync(board).ConfigureAwait(false);
@@ -290,10 +316,12 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color})'s turn to move!").ConfigureAwait(false);
                 }
-                this.Dispose();
+                await _ch.SendMessageAsync($"Channel will be deleted in {_secondsToDelete} seconds.").ConfigureAwait(false);
+                await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
+                await Dispose().ConfigureAwait(false);
             });
         }
-        private void Dispose()
+        private async Task Dispose()
         {
             _background.Dispose();
             _boardIndex.Dispose();
@@ -302,6 +330,13 @@ namespace AegisLiveBot.Core.Services.Fun
             _king.Dispose();
             _white.Dispose();
             _black.Dispose();
+            DirectoryInfo dir = new DirectoryInfo(_tempPath);
+            foreach(FileInfo file in dir.GetFiles())
+            {
+                file.Delete();
+            }
+            Directory.Delete(_tempPath);
+            await _ch.DeleteAsync().ConfigureAwait(false);
         }
         internal class Board
         {
