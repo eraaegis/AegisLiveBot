@@ -290,7 +290,18 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color})'s turn to move!").ConfigureAwait(false);
                 }
+                this.Dispose();
             });
+        }
+        private void Dispose()
+        {
+            _background.Dispose();
+            _boardIndex.Dispose();
+            _tile.Dispose();
+            _tileDark.Dispose();
+            _king.Dispose();
+            _white.Dispose();
+            _black.Dispose();
         }
         internal class Board
         {
