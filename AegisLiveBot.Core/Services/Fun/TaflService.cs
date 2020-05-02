@@ -257,9 +257,6 @@ namespace AegisLiveBot.Core.Services.Fun
                 await _ch.SendMessageAsync(msg).ConfigureAwait(false);
             } else if(responseList[0] == "quit")
             {
-                var msg = $"The channel will be deleted momentarily.";
-                await _ch.SendMessageAsync(msg).ConfigureAwait(false);
-                await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
                 await Dispose().ConfigureAwait(false);
             }
             return false;
@@ -268,10 +265,13 @@ namespace AegisLiveBot.Core.Services.Fun
         {
             Task.Run(async () =>
             {
+                await _ch.SendMessageAsync($"Tafl game has been created for {_blackPlayer.Mention} and {_whitePlayer.Mention}.").ConfigureAwait(false);
                 var interactivity = _client.GetInteractivity();
                 var board = Draw();
                 await _ch.SendFileAsync(board).ConfigureAwait(false);
-                await _ch.SendMessageAsync($"{_blackPlayer.DisplayName}(Black) goes first!").ConfigureAwait(false);
+                var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
+                startMsg += $"Type 'help' for help, or 'quit' to quit game.";
+                await _ch.SendMessageAsync(startMsg).ConfigureAwait(false);
 
                 CurrentPlayer = Piece.Black;
                 var curPlayer = _blackPlayer;
@@ -316,13 +316,13 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color})'s turn to move!").ConfigureAwait(false);
                 }
-                await _ch.SendMessageAsync($"Channel will be deleted in {_secondsToDelete} seconds.").ConfigureAwait(false);
-                await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
                 await Dispose().ConfigureAwait(false);
             });
         }
         private async Task Dispose()
         {
+            await _ch.SendMessageAsync($"Channel will be deleted in {_secondsToDelete} seconds.").ConfigureAwait(false);
+            await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             _background.Dispose();
             _boardIndex.Dispose();
             _tile.Dispose();
