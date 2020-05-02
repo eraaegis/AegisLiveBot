@@ -12,6 +12,26 @@ using static AegisLiveBot.Core.Services.Fun.TaflService.Board;
 
 namespace AegisLiveBot.Core.Services.Fun
 {
+    public class TaflImage
+    {
+        private static readonly Lazy<TaflImage> lazy = new Lazy<TaflImage>(() => new TaflImage());
+        private const string _imagePath = @"../AegisLiveBot.DAL/Images/Tafl";
+        public readonly Image _tile;
+        public readonly Image _tileDark;
+        public readonly Image _king;
+        public readonly Image _white;
+        public readonly Image _black;
+
+        private TaflImage()
+        {
+            _tile = Image.FromFile(Path.Combine(_imagePath, "tile.jpg"));
+            _tileDark = Image.FromFile(Path.Combine(_imagePath, "tile_dark.jpg"));
+            _king = Image.FromFile(Path.Combine(_imagePath, "king.png"));
+            _white = Image.FromFile(Path.Combine(_imagePath, "pawn_white.png"));
+            _black = Image.FromFile(Path.Combine(_imagePath, "pawn_black.png"));
+        }
+        public static TaflImage Instance { get { return lazy.Value; } }
+    }
     public interface ITaflConfiguration
     {
         int GetSize();
@@ -62,14 +82,10 @@ namespace AegisLiveBot.Core.Services.Fun
         private readonly FontFamily _fontFamily;
         private readonly Font _font;
         private readonly SolidBrush _solidBrush;
-        private readonly Image _background;
-        private readonly Image _boardIndex;
-        private readonly Image _tile;
-        private readonly Image _tileDark;
-        private readonly Image _king;
-        private readonly Image _white;
-        private readonly Image _black;
         private const int _tileSize = 64;
+
+        public readonly Image _background;
+        public readonly Image _boardIndex;
 
         private readonly DiscordChannel _ch;
         private readonly DiscordMember _blackPlayer;
@@ -91,12 +107,6 @@ namespace AegisLiveBot.Core.Services.Fun
             _tempPath = Path.Combine(Path.GetTempPath(), tempName);
             Directory.CreateDirectory(_tempPath);
 
-            var imageFolderPath = $"../AegisLiveBot.DAL/Images/Tafl";
-            _tile = Image.FromFile(Path.Combine(imageFolderPath, "tile.jpg"));
-            _tileDark = Image.FromFile(Path.Combine(imageFolderPath, "tile_dark.jpg"));
-            _king = Image.FromFile(Path.Combine(imageFolderPath, "king.png"));
-            _white = Image.FromFile(Path.Combine(imageFolderPath, "pawn_white.png"));
-            _black = Image.FromFile(Path.Combine(imageFolderPath, "pawn_black.png"));
             _background = DrawBoard();
             _boardIndex = DrawBoardIndex();
             _ch = ch;
@@ -122,16 +132,16 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     for(var j = 0; j < size; ++j)
                     {
-                        g.DrawImage(_tile, new Point(i * _tileSize, j * _tileSize));
+                        g.DrawImage(TaflImage.Instance._tile, new Point(i * _tileSize, j * _tileSize));
                     }
                 }
-                g.DrawImage(_tileDark, new Point((size / 2) * _tileSize, (size / 2) * _tileSize));
+                g.DrawImage(TaflImage.Instance._tileDark, new Point((size / 2) * _tileSize, (size / 2) * _tileSize));
                 if (TaflConfiguration.IsCornerRestricted())
                 {
-                    g.DrawImage(_tileDark, new Point(0, 0));
-                    g.DrawImage(_tileDark, new Point(0, (size - 1) * _tileSize));
-                    g.DrawImage(_tileDark, new Point((size - 1) * _tileSize, 0));
-                    g.DrawImage(_tileDark, new Point((size - 1) * _tileSize, (size - 1) * _tileSize));
+                    g.DrawImage(TaflImage.Instance._tileDark, new Point(0, 0));
+                    g.DrawImage(TaflImage.Instance._tileDark, new Point(0, (size - 1) * _tileSize));
+                    g.DrawImage(TaflImage.Instance._tileDark, new Point((size - 1) * _tileSize, 0));
+                    g.DrawImage(TaflImage.Instance._tileDark, new Point((size - 1) * _tileSize, (size - 1) * _tileSize));
                 }
                 boardImage.Save(Path.Combine(_tempPath, "background.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
             }
@@ -175,13 +185,13 @@ namespace AegisLiveBot.Core.Services.Fun
                     {
                         if(tiles[y][x].Piece == Piece.White)
                         {
-                            g.DrawImage(_white, new Point(x * _tileSize, y * _tileSize));
+                            g.DrawImage(TaflImage.Instance._white, new Point(x * _tileSize, y * _tileSize));
                         } else if(tiles[y][x].Piece == Piece.Black)
                         {
-                            g.DrawImage(_black, new Point(x * _tileSize, y * _tileSize));
+                            g.DrawImage(TaflImage.Instance._black, new Point(x * _tileSize, y * _tileSize));
                         } else if(tiles[y][x].Piece == Piece.King)
                         {
-                            g.DrawImage(_king, new Point(x * _tileSize, y * _tileSize));
+                            g.DrawImage(TaflImage.Instance._king, new Point(x * _tileSize, y * _tileSize));
                         }
                     }
                 }
@@ -270,7 +280,8 @@ namespace AegisLiveBot.Core.Services.Fun
                 var board = Draw();
                 await _ch.SendFileAsync(board).ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
-                startMsg += $"Type 'help' for help, or 'quit' to quit game.";
+                startMsg += $"Type 'help' for help, or 'quit' to quit game.\n";
+                startMsg += $"For detailed rules, click here: http://aagenielsen.dk/tafl_rules.php";
                 await _ch.SendMessageAsync(startMsg).ConfigureAwait(false);
 
                 CurrentPlayer = Piece.Black;
@@ -325,11 +336,6 @@ namespace AegisLiveBot.Core.Services.Fun
             await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             _background.Dispose();
             _boardIndex.Dispose();
-            _tile.Dispose();
-            _tileDark.Dispose();
-            _king.Dispose();
-            _white.Dispose();
-            _black.Dispose();
             DirectoryInfo dir = new DirectoryInfo(_tempPath);
             foreach(FileInfo file in dir.GetFiles())
             {
