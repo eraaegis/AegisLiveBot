@@ -153,19 +153,37 @@ namespace AegisLiveBot.Core.Services.Fun
                 Converters = new List<JsonConverter> { new PointConverter() }
             };
             var taflConfigurations = JsonConvert.DeserializeObject<List<TaflConfiguration>>(configurationsList);
-            var msg = $"Select one of the following configurations.\n";
+            var msg = $"Select or preview one of the following configurations:\n";
             for(var i = 0; i < taflConfigurations.Count; ++i)
             {
                 msg += $"{i + 1}. {taflConfigurations.ElementAt(i).Name}\n";
             }
+            msg += $"Use the commands: select <index/name>, preview <index/name>";
             await _ch.SendMessageAsync(msg).ConfigureAwait(false);
             var interactivity = _client.GetInteractivity();
             while (true)
             {
                 var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == picker.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
-                var result = response.Result.Content;
+                var result = response.Result.Content.ToLower();
+                var resultSplit = result.Split(" ");
+                bool select = true;
+                if(resultSplit.Length < 2)
+                {
+                    continue;
+                }
+                var command = resultSplit[0];
+                if(command == "select")
+                {
+                    select = true;
+                } else if(command == "preview")
+                {
+                    select = false;
+                } else
+                {
+                    continue;
+                }
                 var index = 0;
-                bool isIndex = int.TryParse(result, out index);
+                bool isIndex = int.TryParse(resultSplit[1], out index);
                 TaflConfiguration selected = null;
                 if (isIndex)
                 {
@@ -179,6 +197,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                 } else
                 {
+                    var resultName = string.Join(" ", resultSplit.Skip(1));
                     taflConfigurations.FirstOrDefault(x => x.Name.ToLower() == result.ToLower());
                 }
                 if(selected == null)
@@ -186,9 +205,26 @@ namespace AegisLiveBot.Core.Services.Fun
                     await _ch.SendMessageAsync($"Please specify a valid name.").ConfigureAwait(false);
                     continue;
                 }
-                await _ch.SendMessageAsync($"{selected.Name} has been selected.").ConfigureAwait(false);
-                return selected;
+                if (select)
+                {
+                    await _ch.SendMessageAsync($"{selected.Name} has been selected.").ConfigureAwait(false);
+                    return selected;
+                } else
+                {
+                    await PreviewBoard(selected).ConfigureAwait(false);
+                    continue;
+                }
             }
+        }
+        private async Task PreviewBoard(TaflConfiguration taflConfiguration)
+        {
+            TaflConfiguration = taflConfiguration;
+            TaflBoard = new Board(taflConfiguration, this);
+            _background = DrawBoard();
+            _boardIndex = DrawBoardIndex();
+            var board = Draw();
+            await _ch.SendFileAsync(board).ConfigureAwait(false);
+            await _ch.SendMessageAsync($"Now previewing {taflConfiguration.Name}.").ConfigureAwait(false);
         }
         private Image DrawBoard()
         {
