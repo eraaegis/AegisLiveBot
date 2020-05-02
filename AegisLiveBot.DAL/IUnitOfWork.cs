@@ -9,7 +9,6 @@ namespace AegisLiveBot.DAL
     public interface IUnitOfWork : IDisposable
     {
         Context _context { get; }
-        ITestDBRepository TestDBs { get; }
         IServerSettingRepository ServerSettings { get; }
         ILiveUserRepository LiveUsers { get; }
         IRoastMsgRepository RoastMsgs { get; }
