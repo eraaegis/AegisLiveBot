@@ -77,7 +77,6 @@ namespace AegisLiveBot.Web
 
             Commands = Client.UseCommandsNext(commandsConfig);
 
-            Commands.RegisterCommands<TestCommands>();
             Commands.RegisterCommands<StreamingCommands>();
             Commands.RegisterCommands<RoastCommands>();
             Commands.RegisterCommands<GamesCommands>();
