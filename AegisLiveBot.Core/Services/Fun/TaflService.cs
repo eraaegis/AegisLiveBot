@@ -15,7 +15,7 @@ namespace AegisLiveBot.Core.Services.Fun
     public class TaflImage
     {
         private static readonly Lazy<TaflImage> lazy = new Lazy<TaflImage>(() => new TaflImage());
-        private const string _imagePath = @"../AegisLiveBot.DAL/Images/Tafl";
+        private readonly string _imagePath;
         public readonly Image _tile;
         public readonly Image _tileDark;
         public readonly Image _king;
@@ -24,6 +24,8 @@ namespace AegisLiveBot.Core.Services.Fun
 
         private TaflImage()
         {
+            var path = Path.Combine(AppContext.BaseDirectory, "Images/Tafl");
+            _imagePath = path;
             _tile = Image.FromFile(Path.Combine(_imagePath, "tile.jpg"));
             _tileDark = Image.FromFile(Path.Combine(_imagePath, "tile_dark.jpg"));
             _king = Image.FromFile(Path.Combine(_imagePath, "king.png"));
