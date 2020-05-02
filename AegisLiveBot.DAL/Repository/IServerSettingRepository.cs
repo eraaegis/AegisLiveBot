@@ -12,5 +12,6 @@ namespace AegisLiveBot.DAL.Repository
         void SetStreamingRole(ulong guildId, ulong roleId);
         void SetTwitchChannel(ulong guildId, ulong chId);
         bool TogglePriorityMode(ulong guildId);
+        void SetGamesCategory(ulong guildId, ulong catId);
     }
 }

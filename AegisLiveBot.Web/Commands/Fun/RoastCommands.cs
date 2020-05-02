@@ -1,4 +1,5 @@
-﻿using AegisLiveBot.Core.Services;
+﻿using AegisLiveBot.Core.Common;
+using AegisLiveBot.Core.Services;
 using AegisLiveBot.DAL.Repository;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
@@ -38,6 +39,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                 await uow.SaveAsync().ConfigureAwait(false);
                 await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} added more coal to the fire.").ConfigureAwait(false);
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("roast")]
         public async Task Roast(CommandContext ctx, DiscordUser user = null)
@@ -46,7 +48,8 @@ namespace AegisLiveBot.Web.Commands.Fun
             {
                 try
                 {
-                    var msg = uow.RoastMsgs.GetRandomByGuildId(ctx.Guild.Id);
+                    var msgs = uow.RoastMsgs.GetAllByGuildId(ctx.Guild.Id);
+                    var msg = msgs.ElementAt(AegisRandom.RandomNumber(0, msgs.Count()));
                     var victim = user ?? ctx.User;
                     await ctx.Channel.SendMessageAsync($"{victim.Mention}{msg.Msg}").ConfigureAwait(false);
                 } catch(Exception e)
@@ -54,6 +57,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
                 }
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("listroast")]
         public async Task ListRoast(CommandContext ctx)
@@ -76,6 +80,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
                 }
             }
+            ctx.Message.DeleteAfter(3);
         }
         [Command("deleteroast")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -96,6 +101,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ctx.Channel.SendMessageAsync($"{msgId} {e.Message}").ConfigureAwait(false);
                 }
             }
+            ctx.Message.DeleteAfter(3);
         }
     }
 }

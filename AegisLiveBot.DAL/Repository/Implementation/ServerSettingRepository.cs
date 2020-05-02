@@ -38,5 +38,11 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             AddOrUpdate(serverSetting);
             return serverSetting.PriorityMode;
         }
+        public void SetGamesCategory(ulong guildId, ulong catId)
+        {
+            var serverSetting = GetOrAddByGuildId(guildId);
+            serverSetting.GamesCategory = catId;
+            AddOrUpdate(serverSetting);
+        }
     }
 }

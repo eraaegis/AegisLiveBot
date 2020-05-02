@@ -22,4 +22,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Images\Tafl\" />
+  </ItemGroup>
+
 </Project>

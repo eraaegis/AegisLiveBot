@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace AegisLiveBot.DAL.Models.Streaming
+namespace AegisLiveBot.DAL.Models
 {
     public class ServerSetting : Entity
     {
@@ -10,5 +10,6 @@ namespace AegisLiveBot.DAL.Models.Streaming
         public ulong RoleId { get; set; }
         public ulong TwitchChannelId { get; set; }
         public bool PriorityMode { get; set; }
+        public ulong GamesCategory { get; set; }
     }
 }
