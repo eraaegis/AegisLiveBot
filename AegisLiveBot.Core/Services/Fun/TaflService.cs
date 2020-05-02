@@ -72,10 +72,7 @@ namespace AegisLiveBot.Core.Services.Fun
             return false;
         }
     }
-    public interface ITaflService
-    {
-    }
-    public class TaflService : ITaflService
+    public class TaflService
     {
         private readonly ITaflConfiguration TaflConfiguration;
         private Board TaflBoard;
@@ -104,7 +101,7 @@ namespace AegisLiveBot.Core.Services.Fun
             _font = new Font(_fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
             _solidBrush = new SolidBrush(Color.DarkGray);
 
-            _tempPath = Path.Combine(Path.GetTempPath(), tempName);
+            _tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Tafl", tempName);
             Directory.CreateDirectory(_tempPath);
 
             _background = DrawBoard();
@@ -332,8 +329,6 @@ namespace AegisLiveBot.Core.Services.Fun
         }
         private async Task Dispose()
         {
-            await _ch.SendMessageAsync($"Channel will be deleted in {_secondsToDelete} seconds.").ConfigureAwait(false);
-            await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             _background.Dispose();
             _boardIndex.Dispose();
             DirectoryInfo dir = new DirectoryInfo(_tempPath);
@@ -342,6 +337,8 @@ namespace AegisLiveBot.Core.Services.Fun
                 file.Delete();
             }
             Directory.Delete(_tempPath);
+            await _ch.SendMessageAsync($"Channel will be deleted in {_secondsToDelete} seconds.").ConfigureAwait(false);
+            await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             await _ch.DeleteAsync().ConfigureAwait(false);
         }
         internal class Board
@@ -351,9 +348,11 @@ namespace AegisLiveBot.Core.Services.Fun
             private readonly bool WinOnCorner;
             private List<List<Tile>> Tiles;
             private Point KingPosition;
+            private bool KingWin;
             private bool KingCaptured;
             private bool StrongKing;
             private bool KingRestricted;
+            private bool OpponentNoMoves;
 
             internal Board(ITaflConfiguration taflConfiguration, TaflService parent)
             {
@@ -465,18 +464,27 @@ namespace AegisLiveBot.Core.Services.Fun
                     throw new InvalidPieceException();
                 }
                 Capture(location);
+                CheckKingWin();
+                CheckMoves();
             }
             internal bool HasWin()
+            {
+                if(KingWin || KingCaptured || OpponentNoMoves)
+                {
+                    return true;
+                }
+                return false;
+            }
+            internal void CheckKingWin()
             {
                 if((!WinOnCorner && (KingPosition.X == 0 || KingPosition.X == Size - 1 || KingPosition.Y == 0 || KingPosition.Y == Size - 1)) ||
                     (KingPosition.X == 0 && KingPosition.Y == 0) ||
                     (KingPosition.X == Size - 1 && KingPosition.Y == 0) ||
                     (KingPosition.X == 0 && KingPosition.Y == Size - 1) ||
-                    (KingPosition.X == Size - 1 && KingPosition.Y == Size - 1) || KingCaptured)
+                    (KingPosition.X == Size - 1 && KingPosition.Y == Size - 1))
                 {
-                    return true;
+                    KingWin = true;
                 }
-                return false;
             }
             internal void Capture(Point pieceLoc)
             {
@@ -577,6 +585,61 @@ namespace AegisLiveBot.Core.Services.Fun
                     return true;
                 }
                 return false;
+            }
+            internal bool IsDifferentColorByPiece(Piece tile, Piece otherTile)
+            {
+                if (((tile == Piece.White || tile == Piece.King) && otherTile == Piece.Black) ||
+                    (tile == Piece.Black && (otherTile == Piece.White || otherTile == Piece.King)))
+                {
+                    return true;
+                }
+                return false;
+            }
+            internal void CheckMoves()
+            {
+                for(var y = 0; y < Size; ++y)
+                {
+                    for(var x = 0; x < Size; ++x)
+                    {
+                        var tile = Tiles[y][x];
+                        if (IsDifferentColorByPiece(_parent.CurrentPlayer, tile.Piece))
+                        {
+                            if (x > 0)
+                            {
+                                var behindTile = Tiles[y][x - 1];
+                                if (behindTile.Piece == Piece.Empty && (tile.Piece == Piece.King || !behindTile.Restricted))
+                                {
+                                    return;
+                                }
+                            }
+                            if (x < Size - 1)
+                            {
+                                var behindTile = Tiles[y][x + 1];
+                                if (behindTile.Piece == Piece.Empty && (tile.Piece == Piece.King || !behindTile.Restricted))
+                                {
+                                    return;
+                                }
+                            }
+                            if (y > 0)
+                            {
+                                var behindTile = Tiles[y - 1][x];
+                                if (behindTile.Piece == Piece.Empty && (tile.Piece == Piece.King || !behindTile.Restricted))
+                                {
+                                    return;
+                                }
+                            }
+                            if (y < Size - 1)
+                            {
+                                var behindTile = Tiles[y + 1][x];
+                                if (behindTile.Piece == Piece.Empty && (tile.Piece == Piece.King || !behindTile.Restricted))
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                OpponentNoMoves = true;
             }
 
             internal enum Piece

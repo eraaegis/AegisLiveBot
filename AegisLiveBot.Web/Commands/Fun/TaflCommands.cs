@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AegisLiveBot.Web.Commands.Fun
@@ -63,6 +64,12 @@ namespace AegisLiveBot.Web.Commands.Fun
                     var cat = ctx.Guild.GetChannel(catId);
                     var tempName = Path.GetRandomFileName();
                     var chName = $"Tafl Game {tempName}";
+                    var chs = await ctx.Guild.GetChannelsAsync().ConfigureAwait(false);
+                    while(chs.FirstOrDefault(x=>x.Name == chName) != null)
+                    {
+                        tempName = Path.GetRandomFileName();
+                        chName = $"Tafl Game {tempName}";
+                    }
                     var ch = await ctx.Guild.CreateChannelAsync(chName, ChannelType.Text, cat).ConfigureAwait(false);
                     await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
                     await ch.AddOverwriteAsync(ctx.Member, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
