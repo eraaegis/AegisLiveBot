@@ -80,7 +80,6 @@ namespace AegisLiveBot.Web
             Commands.RegisterCommands<StreamingCommands>();
             Commands.RegisterCommands<RoastCommands>();
             Commands.RegisterCommands<GamesCommands>();
-            Commands.RegisterCommands<TaflCommands>();
 
             Client.ConnectAsync();
 
