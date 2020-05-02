@@ -74,7 +74,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
                     await ch.AddOverwriteAsync(ctx.Member, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
                     await ch.AddOverwriteAsync(otherUser, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
-                    var taflService = new TaflService(ch, ctx.Member, otherUser, ctx.Client, tempName);
+                    var taflService = await TaflService.CreateTaflService(ch, ctx.Member, otherUser, ctx.Client, tempName).ConfigureAwait(false);
                     taflService.Start();
                 }
             } catch(Exception e)
