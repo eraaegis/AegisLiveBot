@@ -10,8 +10,6 @@ namespace AegisLiveBot.DAL
     public class UnitOfWork : IUnitOfWork
     {
         public Context _context { get; }
-        private ITestDBRepository _testDBs;
-        public ITestDBRepository TestDBs => _testDBs ?? (_testDBs = new TestDBRepository(_context));
         private IServerSettingRepository _serverSettings;
         public IServerSettingRepository ServerSettings => _serverSettings ?? (_serverSettings = new ServerSettingRepository(_context));
         private ILiveUserRepository _liveUsers;
