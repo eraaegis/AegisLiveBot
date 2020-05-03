@@ -1,4 +1,5 @@
-﻿using DSharpPlus.CommandsNext;
+﻿using AegisLiveBot.Core.Common;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace AegisLiveBot.Web.Commands
         {
             var search = string.Join("+", s);
             await ctx.Channel.SendMessageAsync($"https://lmgtfy.com/?q={search}").ConfigureAwait(false);
+            ctx.Message.DeleteAfter(3);
         }
     }
 }
