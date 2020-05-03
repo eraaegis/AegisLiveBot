@@ -7,7 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json;
-using AegisLiveBot.Commands;
 using AegisLiveBot.DAL;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -17,6 +16,7 @@ using System.Reflection;
 using AegisLiveBot.Core.Services.Streaming;
 using AegisLiveBot.Web.Commands.Fun;
 using DSharpPlus.Interactivity;
+using AegisLiveBot.Web.Commands;
 
 namespace AegisLiveBot.Web
 {
@@ -80,6 +80,7 @@ namespace AegisLiveBot.Web
             Commands.RegisterCommands<StreamingCommands>();
             Commands.RegisterCommands<RoastCommands>();
             Commands.RegisterCommands<GamesCommands>();
+            Commands.RegisterCommands<SearchCommands>();
 
             Client.ConnectAsync();
 
