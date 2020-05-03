@@ -46,8 +46,9 @@ namespace AegisLiveBot.Web.Commands.Fun
         {
             ctx.Message.DeleteAfter(3);
             var interactivity = ctx.Client.GetInteractivity();
-            await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} has challenged {otherUser.Mention} to a Tafl game!").ConfigureAwait(false);
-            await ctx.Channel.SendMessageAsync($"Type \"accept\" to d-d-duel.").ConfigureAwait(false);
+            var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a Tafl game!\n";
+            msg += $"Type \"accept\" to d-d-duel!";
+            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             var tries = 3;
             while (true)
             {

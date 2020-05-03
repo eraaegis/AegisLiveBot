@@ -223,8 +223,7 @@ namespace AegisLiveBot.Core.Services.Fun
             _background = DrawBoard();
             _boardIndex = DrawBoardIndex();
             var board = Draw();
-            await _ch.SendFileAsync(board).ConfigureAwait(false);
-            await _ch.SendMessageAsync($"Now previewing {taflConfiguration.Name}.").ConfigureAwait(false);
+            await _ch.SendFileAsync(board, $"Now previewing {taflConfiguration.Name}.").ConfigureAwait(false);
         }
         private Image DrawBoard()
         {
@@ -379,10 +378,9 @@ namespace AegisLiveBot.Core.Services.Fun
         {
             Task.Run(async () =>
             {
-                await _ch.SendMessageAsync($"Tafl game has been created for {_blackPlayer.Mention} and {_whitePlayer.Mention}.").ConfigureAwait(false);
                 var interactivity = _client.GetInteractivity();
                 var board = Draw();
-                await _ch.SendFileAsync(board).ConfigureAwait(false);
+                await _ch.SendFileAsync(board, $"Tafl game has been created for {_blackPlayer.Mention} and {_whitePlayer.Mention}.").ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
                 startMsg += $"Type 'help' for help, or 'quit' to quit game.\n";
                 startMsg += $"For detailed rules, click here: http://aagenielsen.dk/tafl_rules.php";
