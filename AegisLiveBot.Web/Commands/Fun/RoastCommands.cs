@@ -23,8 +23,9 @@ namespace AegisLiveBot.Web.Commands.Fun
 
         [Command("addroast")]
         [RequireUserPermissions(Permissions.ManageRoles)]
-        public async Task AddRoast(CommandContext ctx, string msg)
+        public async Task AddRoast(CommandContext ctx, params string[] msgs)
         {
+            var msg = string.Join(" ", msgs);
             if(msg[0] != '\'')
             {
                 msg = ' ' + msg;
