@@ -38,12 +38,12 @@ namespace AegisLiveBot.Web.Commands.Fun
             {
                 uow.RoastMsgs.AddByGuildId(ctx.Guild.Id, msg);
                 await uow.SaveAsync().ConfigureAwait(false);
-                await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} added more coal to the fire.").ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"{ctx.Member.DisplayName} added more coal to the fire.").ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
         [Command("roast")]
-        public async Task Roast(CommandContext ctx, DiscordUser user = null)
+        public async Task Roast(CommandContext ctx, DiscordMember user = null)
         {
             using (var uow = _db.UnitOfWork())
             {
@@ -51,11 +51,11 @@ namespace AegisLiveBot.Web.Commands.Fun
                 {
                     var msgs = uow.RoastMsgs.GetAllByGuildId(ctx.Guild.Id);
                     var msg = msgs.ElementAt(AegisRandom.RandomNumber(0, msgs.Count()));
-                    var victim = user ?? ctx.User;
-                    await ctx.Channel.SendMessageAsync($"{victim.Mention}{msg.Msg}").ConfigureAwait(false);
+                    var victim = user ?? ctx.Member;
+                    await ctx.Channel.SendMessageAsync($"{victim.DisplayName}{msg.Msg}").ConfigureAwait(false);
                 } catch(Exception e)
                 {
-                    await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{ctx.Member.DisplayName} {e.Message}").ConfigureAwait(false);
                 }
             }
             ctx.Message.DeleteAfter(3);
@@ -78,7 +78,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
                 } catch(Exception e)
                 {
-                    await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{ctx.Member.DisplayName} {e.Message}").ConfigureAwait(false);
                 }
             }
             ctx.Message.DeleteAfter(3);
@@ -96,7 +96,7 @@ namespace AegisLiveBot.Web.Commands.Fun
                     await ctx.Channel.SendMessageAsync($"The bot decided that the roast is not fiery enough.").ConfigureAwait(false);
                 } catch(ZeroOrNegativeRoastException e)
                 {
-                    await ctx.Channel.SendMessageAsync($"{ctx.Member.Mention} {e.Message}").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{ctx.Member.DisplayName} {e.Message}").ConfigureAwait(false);
                 } catch(OutOfRangeRoastException e)
                 {
                     await ctx.Channel.SendMessageAsync($"{msgId} {e.Message}").ConfigureAwait(false);
