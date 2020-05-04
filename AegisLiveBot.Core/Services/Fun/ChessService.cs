@@ -293,7 +293,8 @@ namespace AegisLiveBot.Core.Services.Fun
                                     }
                                 }
                                 // if castling
-                                if (command == "O-O" || command == "0-0" || command == "o-o")
+                                var castling = command.ToLower().Replace("-", "");
+                                if (castling == "oo" || castling == "00")
                                 { // king side castling
                                     if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
                                     {
@@ -304,7 +305,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         Board.TryMove(new Point(4, 7), new Point(6, 7));
                                     }
                                 }
-                                else if (command == "O-O-O" || command == "0-0-0" || command == "o-o-o")
+                                else if (castling == "ooo" || castling == "000")
                                 { // queen side castling
                                     if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
                                     {
