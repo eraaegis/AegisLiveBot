@@ -11,7 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static AegisLiveBot.Core.Services.Fun.TaflService.Board;
+using static AegisLiveBot.Core.Services.Fun.TaflService.TaflBoard;
 
 namespace AegisLiveBot.Core.Services.Fun
 {
@@ -80,10 +80,10 @@ namespace AegisLiveBot.Core.Services.Fun
         [JsonProperty("cornerRestricted")]
         public bool CornerRestricted { get; private set; }
     }
-    public class TaflService
+    public class TaflService : IGameService
     {
         private TaflConfiguration TaflConfiguration;
-        private Board TaflBoard;
+        private TaflBoard Board;
         private FontFamily _fontFamily;
         private Font _font;
         private SolidBrush _solidBrush;
@@ -101,40 +101,28 @@ namespace AegisLiveBot.Core.Services.Fun
         private const int _secondsToDelete = 60;
         internal Piece CurrentPlayer { get; private set; }
 
-        private TaflService()
+        public TaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
         {
-
-        }
-        public static async Task<TaflService> CreateTaflService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
-        {
-            var taflService = new TaflService();
-
-            taflService._fontFamily = new FontFamily("Arial");
-            taflService._font = new Font(taflService._fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
-            taflService._solidBrush = new SolidBrush(Color.DarkGray);
-            taflService._tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Tafl", tempName);
-            Directory.CreateDirectory(taflService._tempPath);
-            taflService._ch = ch;
+            _fontFamily = new FontFamily("Arial");
+            _font = new Font(_fontFamily, 24, FontStyle.Bold, GraphicsUnit.Pixel);
+            _solidBrush = new SolidBrush(Color.DarkGray);
+            _tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Tafl", tempName);
+            Directory.CreateDirectory(_tempPath);
+            _ch = ch;
 
             if (AegisRandom.RandomBool())
             {
-                taflService._blackPlayer = p1;
-                taflService._whitePlayer = p2;
-            } else
-            {
-                taflService._blackPlayer = p2;
-                taflService._whitePlayer = p1;
+                _blackPlayer = p1;
+                _whitePlayer = p2;
             }
-            taflService._client = client;
-
-            taflService.TaflConfiguration = await taflService.PickBoard(p1).ConfigureAwait(false);
-            taflService.TaflBoard = new Board(taflService.TaflConfiguration, taflService);
-            taflService._background = taflService.DrawBoard();
-            taflService._boardIndex = taflService.DrawBoardIndex();
-
-            return taflService;
+            else
+            {
+                _blackPlayer = p2;
+                _whitePlayer = p1;
+            }
+            _client = client;
         }
-        private async Task<TaflConfiguration> PickBoard(DiscordMember picker)
+        private async Task<TaflConfiguration> PickBoard()
         {
             var json = string.Empty;
 
@@ -153,7 +141,8 @@ namespace AegisLiveBot.Core.Services.Fun
                 Converters = new List<JsonConverter> { new PointConverter() }
             };
             var taflConfigurations = JsonConvert.DeserializeObject<List<TaflConfiguration>>(configurationsList);
-            var msg = $"Select or preview one of the following configurations:\n";
+            var msg = $"A Tafl game has been created for {_blackPlayer.Mention} and {_whitePlayer.Mention}.\n";
+            msg += $"Select or preview one of the following configurations:\n";
             for(var i = 0; i < taflConfigurations.Count; ++i)
             {
                 msg += $"{i + 1}. {taflConfigurations.ElementAt(i).Name}\n";
@@ -163,7 +152,7 @@ namespace AegisLiveBot.Core.Services.Fun
             var interactivity = _client.GetInteractivity();
             while (true)
             {
-                var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == picker.Id && x.ChannelId == _ch.Id).ConfigureAwait(false);
+                var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _blackPlayer.Id || x.Author.Id == _whitePlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
                 var result = response.Result.Content.ToLower();
                 var resultSplit = result.Split(" ");
                 bool select = true;
@@ -219,7 +208,7 @@ namespace AegisLiveBot.Core.Services.Fun
         private async Task PreviewBoard(TaflConfiguration taflConfiguration)
         {
             TaflConfiguration = taflConfiguration;
-            TaflBoard = new Board(taflConfiguration, this);
+            Board = new TaflBoard(taflConfiguration, this);
             _background = DrawBoard();
             _boardIndex = DrawBoardIndex();
             var board = Draw();
@@ -278,7 +267,7 @@ namespace AegisLiveBot.Core.Services.Fun
         {
             var size = TaflConfiguration.Size;
             var boardImage = new Bitmap(size * _tileSize, size * _tileSize);
-            var tiles = TaflBoard.GetTiles();
+            var tiles = Board.GetTiles();
             using(Graphics g = Graphics.FromImage(boardImage))
             {
                 g.DrawImage(_background, new Point(0, 0));
@@ -357,7 +346,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     var piece = TryStringToPoint(responseList[1]);
                     var location = TryStringToPoint(responseList[2]);
-                    TaflBoard.TryMove(piece, location);
+                    Board.TryMove(piece, location);
                     return true;
                 } catch(Exception e)
                 {
@@ -379,8 +368,14 @@ namespace AegisLiveBot.Core.Services.Fun
             Task.Run(async () =>
             {
                 var interactivity = _client.GetInteractivity();
+
+                TaflConfiguration = await PickBoard().ConfigureAwait(false);
+                Board = new TaflBoard(TaflConfiguration, this);
+                _background = DrawBoard();
+                _boardIndex = DrawBoardIndex();
+
                 var board = Draw();
-                await _ch.SendFileAsync(board, $"Tafl game has been created for {_blackPlayer.Mention} and {_whitePlayer.Mention}.").ConfigureAwait(false);
+                await _ch.SendFileAsync(board, $"Tafl game has started!").ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
                 startMsg += $"Type 'help' for help, or 'quit' to quit game.\n";
                 startMsg += $"For detailed rules, click here: http://aagenielsen.dk/tafl_rules.php";
@@ -411,7 +406,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     board = Draw();
                     await _ch.SendFileAsync(board).ConfigureAwait(false);
                     var color = CurrentPlayer == Piece.Black ? "Black" : "White";
-                    if (TaflBoard.HasWin())
+                    if (Board.HasWin())
                     {
                         await _ch.SendMessageAsync($"{curPlayer.DisplayName}({color}) has won the game!").ConfigureAwait(false);
                         break;
@@ -446,7 +441,7 @@ namespace AegisLiveBot.Core.Services.Fun
             await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             await _ch.DeleteAsync().ConfigureAwait(false);
         }
-        internal class Board
+        internal class TaflBoard
         {
             private readonly TaflService _parent;
             private readonly int Size;
@@ -459,7 +454,7 @@ namespace AegisLiveBot.Core.Services.Fun
             private bool KingRestricted;
             private bool OpponentNoMoves;
 
-            internal Board(TaflConfiguration taflConfiguration, TaflService parent)
+            internal TaflBoard(TaflConfiguration taflConfiguration, TaflService parent)
             {
                 _parent = parent;
                 Size = taflConfiguration.Size;

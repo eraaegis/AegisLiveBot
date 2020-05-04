@@ -43,65 +43,19 @@ namespace AegisLiveBot.Web.Commands.Fun
         }
 
         [Command("tafl")]
-        public async Task Tafl(CommandContext ctx, DiscordMember otherUser)
+        public async Task Tafl(CommandContext ctx, DiscordMember otherUser = null)
         {
-            ctx.Message.DeleteAfter(3);
-            var interactivity = ctx.Client.GetInteractivity();
-            var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a Tafl game!\n";
-            msg += $"Type \"accept\" to d-d-duel!";
-            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
-            var tries = 3;
-            while (true)
-            {
-                var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == otherUser.Id && x.ChannelId == ctx.Channel.Id).ConfigureAwait(false);
-                if (response.TimedOut)
-                {
-                    await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
-                    return;
-                }
-                var responseMsg = response.Result.Content.ToLower();
-                response.Result.DeleteAfter(3);
-                if (responseMsg == "accept")
-                {
-                    break;
-                }
-                else
-                {
-                    --tries;
-                    if (tries == 0)
-                    {
-                        await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
-                        return;
-                    }
-                }
-            }
-            try
-            {
-                using (var uow = _db.UnitOfWork())
-                {
-                    var serverSetting = uow.ServerSettings.GetOrAddByGuildId(ctx.Guild.Id);
-                    var catId = serverSetting.GamesCategory;
-                    var cat = ctx.Guild.GetChannel(catId);
-                    var tempName = Path.GetRandomFileName();
-                    var chName = $"Tafl Game {tempName}";
-                    var chs = await ctx.Guild.GetChannelsAsync().ConfigureAwait(false);
-                    while (chs.FirstOrDefault(x => x.Name == chName) != null)
-                    {
-                        tempName = Path.GetRandomFileName();
-                        chName = $"Tafl Game {tempName}";
-                    }
-                    var ch = await ctx.Guild.CreateChannelAsync(chName, ChannelType.Text, cat).ConfigureAwait(false);
-                    await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
-                    await ch.AddOverwriteAsync(ctx.Member, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
-                    await ch.AddOverwriteAsync(otherUser, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
-                    var taflService = await TaflService.CreateTaflService(ch, ctx.Member, otherUser, ctx.Client, tempName).ConfigureAwait(false);
-                    taflService.Start();
-                }
-            }
-            catch (Exception e)
-            {
-                await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
-            }
+            var gameType = typeof(TaflService);
+            var gameName = "Tafl";
+            await StartGame(ctx, otherUser, gameType, gameName);
+        }
+
+        [Command("chess")]
+        public async Task Chess(CommandContext ctx, DiscordMember otherUser = null)
+        {
+            var gameType = typeof(ChessService);
+            var gameName = "Chess";
+            await StartGame(ctx, otherUser, gameType, gameName);
         }
 
         [Command("testdraw")]
@@ -149,6 +103,72 @@ namespace AegisLiveBot.Web.Commands.Fun
                 }
                 board.Save(Path.Combine(path, "test.jpg"), System.Drawing.Imaging.ImageFormat.Jpeg);
                 await ctx.Channel.SendFileAsync(Path.Combine(path, "test.jpg")).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
+            }
+        }
+        private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
+        {
+            ctx.Message.DeleteAfter(3);
+            if(otherUser == null)
+            {
+                otherUser = ctx.Member;
+            }
+            var interactivity = ctx.Client.GetInteractivity();
+            var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a {gameName} game!\n";
+            msg += $"Type \"accept\" to d-d-duel!";
+            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+            var tries = 3;
+            while (true)
+            {
+                var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == otherUser.Id && x.ChannelId == ctx.Channel.Id).ConfigureAwait(false);
+                if (response.TimedOut)
+                {
+                    await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
+                    return;
+                }
+                var responseMsg = response.Result.Content.ToLower();
+                response.Result.DeleteAfter(3);
+                if (responseMsg == "accept")
+                {
+                    break;
+                }
+                else
+                {
+                    --tries;
+                    if (tries == 0)
+                    {
+                        await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
+                        return;
+                    }
+                }
+            }
+            try
+            {
+                using (var uow = _db.UnitOfWork())
+                {
+                    var serverSetting = uow.ServerSettings.GetOrAddByGuildId(ctx.Guild.Id);
+                    var catId = serverSetting.GamesCategory;
+                    var cat = ctx.Guild.GetChannel(catId);
+                    var tempName = Path.GetRandomFileName();
+                    var chName = $"{gameName} Game {tempName}";
+                    var chs = await ctx.Guild.GetChannelsAsync().ConfigureAwait(false);
+                    while (chs.FirstOrDefault(x => x.Name == chName) != null)
+                    {
+                        tempName = Path.GetRandomFileName();
+                        chName = $"{gameName} Game {tempName}";
+                    }
+                    var ch = await ctx.Guild.CreateChannelAsync(chName, ChannelType.Text, cat).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(ctx.Member, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
+                    await ch.AddOverwriteAsync(otherUser, Permissions.SendMessages, Permissions.None).ConfigureAwait(false);
+                    var gameConstructor = gameType.GetConstructor(new[] { typeof(DiscordChannel), typeof(DiscordMember),
+                        typeof(DiscordMember), typeof(DiscordClient), typeof(string)});
+                    var game = gameConstructor.Invoke(new object[] { ch, ctx.Member, otherUser, ctx.Client, tempName });
+                    ((IGameService)game).Start();
+                }
             }
             catch (Exception e)
             {

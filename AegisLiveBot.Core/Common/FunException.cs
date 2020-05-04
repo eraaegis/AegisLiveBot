@@ -20,10 +20,22 @@ namespace AegisLiveBot.Core.Common
     }
     public class InvalidMoveException : FunException
     {
-        public InvalidMoveException() : base("Invalid move location!") { }
+        public InvalidMoveException() : base("Invalid move!") { }
     }
     public class InvalidPieceException : FunException
     {
         public InvalidPieceException() : base("Specify a valid piece!") { }
+    }
+    public class ParsePointException : FunException
+    {
+        public ParsePointException() : base("Enter a valid grid!") { }
+    }
+    public class CheckMoveException : FunException
+    {
+        public CheckMoveException() : base("This move puts you in check!") { }
+    }
+    public class InvalidPromotionException : FunException
+    {
+        public InvalidPromotionException() : base("Please specify promotion choice with: promote q/r/k/b") { }
     }
 }
