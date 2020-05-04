@@ -13,5 +13,7 @@ namespace AegisLiveBot.DAL
         public string Prefix { get; private set; }
         [JsonProperty("twitchclientid")]
         public string TwitchClientId { get; private set; }
+        [JsonProperty("twitchclientsecret")]
+        public string TwitchClientSecret { get; private set; }
     }
 }

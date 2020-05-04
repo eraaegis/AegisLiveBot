@@ -26,20 +26,27 @@ namespace AegisLiveBot.Core.Services.Streaming
         private readonly DiscordClient _client;
         private readonly Timer _twitchPollTimer;
         private string TwitchClientId = "";
+        private string TwitchClientSecret = "";
+        private string AccessToken = "";
         private bool IsPolling = false;
         public TwitchPollService(DbService db, DiscordClient client, ConfigJson configJson)
         {
             _db = db;
             _client = client;
             TwitchClientId = configJson.TwitchClientId;
+            TwitchClientSecret = configJson.TwitchClientSecret;
 
-            _twitchPollTimer = new Timer(async (state) =>
+        _twitchPollTimer = new Timer(async (state) =>
             {
                 if (!IsPolling)
                 {
-                    await TryPollTwitchStreams().ConfigureAwait(false);
+                    if (AccessToken == "")
+                    {
+                        GetNewToken();
+                    }
+                        await TryPollTwitchStreams().ConfigureAwait(false);
                 }
-            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
         }
         private async Task TryPollTwitchStreams()
         {
@@ -110,6 +117,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 using (var hc = new HttpClient(hcHandle, false))
                 {
                     hc.DefaultRequestHeaders.Add("Client-ID", TwitchClientId);
+                    hc.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessToken);
                     hc.DefaultRequestHeaders.UserAgent.ParseAdd("AegisLiveBot");
                     hc.Timeout = TimeSpan.FromSeconds(5);
 
@@ -128,51 +136,81 @@ namespace AegisLiveBot.Core.Services.Streaming
                         {
                             await Task.Delay(5000).ConfigureAwait(false);
                         }
-                        var jsonString = await response.Content.ReadAsStringAsync();
-                        var jsonObject = JObject.Parse(jsonString);
-                        var jsonData = jsonObject["data"];
-                        JToken jsonType = null;
-                        if (jsonData.Count() != 0)
+                        try
                         {
-                            jsonType = jsonData[0]["type"];
-                        }
-
-                        var guild = _client.Guilds.FirstOrDefault(x => x.Value.Id == liveUser.GuildId).Value;
-                        var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                        if (guild == null || user == null)
-                        {
-                            Console.WriteLine($"Server or User does not exist!");
-                            uow.LiveUsers.RemoveByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
-                            await uow.SaveAsync().ConfigureAwait(false);
-                            return false;
-                        }
-                        var serverSetting = uow.ServerSettings.GetOrAddByGuildId(liveUser.GuildId);
-                        await uow.SaveAsync().ConfigureAwait(false);
-                        if (serverSetting == null || serverSetting.RoleId == 0)
-                        {
-                            Console.WriteLine($"Streamer role not set!");
-                        }
-                        else
-                        {
-                            var role = guild.GetRole(serverSetting.RoleId);
-                            if (role == null)
+                            var jsonString = await response.Content.ReadAsStringAsync();
+                            var jsonObject = JObject.Parse(jsonString);
+                            var jsonData = jsonObject["data"];
+                            JToken jsonType = null;
+                            if (jsonData.Count() != 0)
                             {
-                                Console.WriteLine($"Role does not exist!");
+                                jsonType = jsonData[0]["type"];
+                            }
+
+                            var guild = _client.Guilds.FirstOrDefault(x => x.Value.Id == liveUser.GuildId).Value;
+                            var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
+                            if (guild == null || user == null)
+                            {
+                                Console.WriteLine($"Server or User does not exist!");
+                                uow.LiveUsers.RemoveByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
+                                await uow.SaveAsync().ConfigureAwait(false);
                                 return false;
                             }
-                            if (jsonType != null && jsonType.ToString() == "live")
+                            var serverSetting = uow.ServerSettings.GetOrAddByGuildId(liveUser.GuildId);
+                            await uow.SaveAsync().ConfigureAwait(false);
+                            if (serverSetting == null || serverSetting.RoleId == 0)
                             {
-                                await user.GrantRoleAsync(role);
-                                return true;
+                                Console.WriteLine($"Streamer role not set!");
                             }
                             else
                             {
-                                await user.RevokeRoleAsync(role);
-                                return false;
+                                var role = guild.GetRole(serverSetting.RoleId);
+                                if (role == null)
+                                {
+                                    Console.WriteLine($"Role does not exist!");
+                                    return false;
+                                }
+                                if (jsonType != null && jsonType.ToString() == "live")
+                                {
+                                    await user.GrantRoleAsync(role);
+                                    return true;
+                                }
+                                else
+                                {
+                                    await user.RevokeRoleAsync(role);
+                                    return false;
+                                }
                             }
+                        } catch(Exception e)
+                        {
+                            await GetNewToken().ConfigureAwait(false);
+                            Console.WriteLine(e.Message);
                         }
                     }
                     return false;
+                }
+            }
+        }
+        private async Task GetNewToken()
+        {
+            var hcHandle = new HttpClientHandler();
+            using (var hc = new HttpClient(hcHandle, false))
+            {
+                hc.Timeout = TimeSpan.FromSeconds(5);
+                var stringContent = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("client_id", TwitchClientId),
+                    new KeyValuePair<string, string>("client_secret", TwitchClientSecret),
+                    new KeyValuePair<string, string>("grant_type", "client_credentials")
+                });
+
+                using (var response = await hc.PostAsync("https://id.twitch.tv/oauth2/token", stringContent))
+                {
+                    response.EnsureSuccessStatusCode();
+                    var jsonString = await response.Content.ReadAsStringAsync();
+                    var jsonObject = JObject.Parse(jsonString);
+                    var jsonData = jsonObject["access_token"];
+                    AccessToken = jsonData.ToString();
                 }
             }
         }
