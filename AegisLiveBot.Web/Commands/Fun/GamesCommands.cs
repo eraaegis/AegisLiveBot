@@ -47,7 +47,7 @@ namespace AegisLiveBot.Web.Commands.Fun
         {
             var gameType = typeof(TaflService);
             var gameName = "Tafl";
-            await StartGame(ctx, otherUser, gameType, gameName);
+            await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
         }
 
         [Command("chess")]
@@ -55,7 +55,7 @@ namespace AegisLiveBot.Web.Commands.Fun
         {
             var gameType = typeof(ChessService);
             var gameName = "Chess";
-            await StartGame(ctx, otherUser, gameType, gameName);
+            await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
         }
         private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
         {

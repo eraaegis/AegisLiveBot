@@ -212,6 +212,9 @@ namespace AegisLiveBot.Core.Services.Fun
                                     case 'k':
                                         Board.Promote(typeof(Knight));
                                         break;
+                                    case 'n':
+                                        Board.Promote(typeof(Knight));
+                                        break;
                                     case 'b':
                                         Board.Promote(typeof(Bishop));
                                         break;
