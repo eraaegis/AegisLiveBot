@@ -42,7 +42,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 {
                     if (AccessToken == "")
                     {
-                        GetNewToken();
+                        await GetNewToken().ConfigureAwait(false);
                     }
                         await TryPollTwitchStreams().ConfigureAwait(false);
                 }
