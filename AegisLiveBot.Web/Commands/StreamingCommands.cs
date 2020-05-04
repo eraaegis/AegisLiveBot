@@ -34,7 +34,7 @@ namespace AegisLiveBot.Web.Commands
                 var roleId = discordRole != null ? discordRole.Id : 0;
                 uow.ServerSettings.SetStreamingRole(ctx.Guild.Id, roleId);
                 await uow.SaveAsync().ConfigureAwait(false); ;
-                await ctx.Channel.SendMessageAsync($"Live role has been set to {discordRole.Mention}").ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"Live role has been set to {discordRole.Name}").ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
@@ -52,7 +52,7 @@ namespace AegisLiveBot.Web.Commands
                     await ctx.Channel.SendMessageAsync($"Live role has not been set!").ConfigureAwait(false);
                 } else
                 {
-                    await ctx.Channel.SendMessageAsync($"Live role is: {role.Mention}").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"Live role is: {role.Name}").ConfigureAwait(false);
                 }
             }
             ctx.Message.DeleteAfter(3);
@@ -103,20 +103,20 @@ namespace AegisLiveBot.Web.Commands
         }
         [Command("addliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
-        public async Task AddLiveUser(CommandContext ctx, DiscordUser user, string twitchName)
+        public async Task AddLiveUser(CommandContext ctx, DiscordMember user, string twitchName)
         {
             using (var uow = _db.UnitOfWork())
             {
                 uow.LiveUsers.UpdateTwitchName(ctx.Guild.Id, user.Id, twitchName);
                 await uow.SaveAsync().ConfigureAwait(false);
-                await ctx.Channel.SendMessageAsync($"{user.Mention} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
 
         [Command("removeliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
-        public async Task RemoveLiveUser(CommandContext ctx, DiscordUser user)
+        public async Task RemoveLiveUser(CommandContext ctx, DiscordMember user)
         {
             using (var uow = _db.UnitOfWork())
             {
@@ -124,7 +124,7 @@ namespace AegisLiveBot.Web.Commands
                 {
                     uow.LiveUsers.RemoveByGuildIdUserId(ctx.Guild.Id, user.Id);
                     await uow.SaveAsync().ConfigureAwait(false);
-                    await ctx.Channel.SendMessageAsync($"{user.Mention} has been unregistered for streaming role.").ConfigureAwait(false);
+                    await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been unregistered for streaming role.").ConfigureAwait(false);
                 } catch(Exception e)
                 {
                     await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
