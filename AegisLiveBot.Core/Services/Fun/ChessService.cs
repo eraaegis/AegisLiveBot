@@ -607,10 +607,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         try
                         {
                             PiecesOnBoard[origin.X][origin.Y] = null;
-                            if(tempPiece == null)
-                            {
-                                PiecesOnBoard[dest.X][dest.Y] = piece;
-                            }
+                            PiecesOnBoard[dest.X][dest.Y] = piece;
                             if (piece.GetType() == typeof(King))
                             {
                                 piece.Pos = dest;
@@ -622,10 +619,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         } finally
                         {
                             PiecesOnBoard[origin.X][origin.Y] = piece;
-                            if(tempPiece == null)
-                            {
-                                PiecesOnBoard[dest.X][dest.Y] = null;
-                            }
+                            PiecesOnBoard[dest.X][dest.Y] = tempPiece;
                             if (piece.GetType() == typeof(King))
                             {
                                 piece.Pos = origin;
