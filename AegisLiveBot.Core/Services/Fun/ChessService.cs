@@ -221,8 +221,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 }
                                 if (!HasPromote)
                                 {
-                                    var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
-                                    await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                    DrawBoard = true;
                                     if (Board.CheckEnd())
                                     {
                                         var msg = "";
