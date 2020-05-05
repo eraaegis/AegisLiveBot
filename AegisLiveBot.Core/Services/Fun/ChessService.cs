@@ -446,7 +446,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     else
                                     {
                                         // get all the pieces specified by piece type that can move to dest
-                                        var reacheablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.Player == CurrentPlayer && x.CanReach(dest)).ToList();
+                                        var reacheablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.Player == CurrentPlayer && x.CanReach(dest));
                                         // if there is only one, move that one
                                         if (reacheablePieces.Count() == 1)
                                         {
@@ -457,11 +457,11 @@ namespace AegisLiveBot.Core.Services.Fun
                                             // get by file if set, or rank if set
                                             if (file != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.X == file - 'a').ToList();
+                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.X == file - 'a');
                                             }
                                             else if (rank != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.Y == rank - '1').ToList();
+                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.Y == rank - '1');
                                             }
                                             // if still more than 1 reacheable piece, unambiguous move
                                             if (reacheablePieces.Count() == 1)
