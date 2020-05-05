@@ -64,7 +64,7 @@ namespace AegisLiveBot.Core.Services.Fun
         private readonly DiscordMember _blackPlayer;
         private const int _borderOffset = 40;
         private const int _tileSize = 80;
-        private const int _secondsToDelete = 60;
+        private const int _secondsToDelete = 300;
         private Player CurrentPlayer;
         internal bool HasMoved { get; set; }
         internal bool HasPromote { get; set; }
@@ -149,12 +149,15 @@ namespace AegisLiveBot.Core.Services.Fun
                         helpMsg += $"resign: resign the game.\n";
                         helpMsg += $"move <origin> <destination>: moves the piece designated in origin to destination. E.g move e2 e4\n";
                         helpMsg += $"promote q/r/n/b: when a pawn is at the last rank, select promotion\n";
-                        helpMsg += $"drawflip: toggle drawing flipped boards for black player\n";
+                        helpMsg += $"flipboard: toggle drawing flipped boards for black player\n";
+                        helpMsg += $"showboard: shows the current board\n";
                         helpMsg += $"Supports algebraic notation, for inputs with algebraic notation, visit https://en.wikipedia.org/wiki/Algebraic_notation_(chess)";
                         await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
                     } else if(command.ToLower() == "resign")
                     {
                         var msg = $"{((DiscordMember)response.Result.Author).DisplayName} has resigned the game!\n";
+                        var history = Board.WriteHistory(response.Result.Author.Id == _blackPlayer.Id ? Player.White : Player.Black, false);
+                        msg += history;
                         await Dispose(msg).ConfigureAwait(false);
                         break;
                     } else if(!HasMoved && command.ToLower() == "move" && response.Result.Author.Id == curPlayer.Id)
@@ -184,6 +187,8 @@ namespace AegisLiveBot.Core.Services.Fun
                                         }
                                         var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                        var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
+                                        msg += history;
                                         await Dispose(msg).ConfigureAwait(false);
                                         break;
                                     }
@@ -236,6 +241,8 @@ namespace AegisLiveBot.Core.Services.Fun
                                         {
                                             msg = $"Stalemate!\n";
                                         }
+                                        var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
+                                        msg += history;
                                         await Dispose(msg).ConfigureAwait(false);
                                         break;
                                     }
@@ -298,7 +305,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 }
                                 // if castling
                                 var castling = command.ToLower().Replace("-", "");
-                                if (castling == "oo" || castling == "00")
+                                if ((castling == "oo" || castling == "00") && Board.PiecesOnBoard[4][0] != null)
                                 { // king side castling
                                     if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
                                     {
@@ -309,7 +316,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         Board.TryMove(new Point(4, 7), new Point(6, 7));
                                     }
                                 }
-                                else if (castling == "ooo" || castling == "000")
+                                else if ((castling == "ooo" || castling == "000") && Board.PiecesOnBoard[4][0] != null)
                                 { // queen side castling
                                     if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
                                     {
@@ -467,6 +474,8 @@ namespace AegisLiveBot.Core.Services.Fun
                                         }
                                         var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                        var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
+                                        msg += history;
                                         await Dispose(msg).ConfigureAwait(false);
                                         break;
                                     }
@@ -524,7 +533,9 @@ namespace AegisLiveBot.Core.Services.Fun
                 file.Delete();
             }
             Directory.Delete(_tempPath);
-            msg += $"Channel will be deleted in {_secondsToDelete} seconds.";
+            var timeMsg = _secondsToDelete <= 60 ? $"{_secondsToDelete} seconds" : $"{_secondsToDelete / 60} minutes";
+            msg += $"Channel will be deleted in {timeMsg}.\n";
+            msg += $"You may use this time to save the moves record.";
             await _ch.SendMessageAsync(msg).ConfigureAwait(false);
             await Task.Delay(_secondsToDelete * 1000).ConfigureAwait(false);
             await _ch.DeleteAsync().ConfigureAwait(false);
@@ -532,7 +543,8 @@ namespace AegisLiveBot.Core.Services.Fun
         internal enum Player
         {
             White,
-            Black
+            Black,
+            Draw
         }
         internal class ChessBoard
         {
@@ -543,6 +555,7 @@ namespace AegisLiveBot.Core.Services.Fun
             internal Player EnPassantPlayer { get; set; }
             internal bool InCheck { get; set; }
             internal Piece PawnToPromote { get; set; }
+            internal List<string> History { get; set; }
             internal ChessBoard()
             {
 
@@ -599,6 +612,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     PiecesOnBoard[piece.Pos.X][piece.Pos.Y] = piece;
                 }
+                History = new List<string>();
             }
             internal void TryMove(Point origin, Point dest)
             {
@@ -669,6 +683,77 @@ namespace AegisLiveBot.Core.Services.Fun
                         }
                         PiecesOnBoard[origin.X][origin.Y] = null;
                         PiecesOnBoard[piece.Pos.X][piece.Pos.Y] = piece;
+                        // write to history
+                        var moveString = "";
+                        // castle
+                        if (piece.GetType() == typeof(King) && Math.Abs(origin.X - dest.X) == 2) 
+                        {
+                            if(dest.X > origin.X)
+                            {
+                                moveString = "O-O";
+                            } else
+                            {
+                                moveString = "O-O-O";
+                            }
+                        } else
+                        {
+                            var pieceType = piece.GetType();
+                            char pieceIdentifier = '\0';
+                            if(pieceType == typeof(King))
+                            {
+                                pieceIdentifier = 'K';
+                            } else if (pieceType == typeof(Queen))
+                            {
+                                pieceIdentifier = 'Q';
+                            } else if (pieceType == typeof(Bishop))
+                            {
+                                pieceIdentifier = 'B';
+                            } else if (pieceType == typeof(Knight))
+                            {
+                                pieceIdentifier = 'N';
+                            } else if (pieceType == typeof(Rook))
+                            {
+                                pieceIdentifier = 'R';
+                            } else
+                            {
+                                pieceIdentifier = (char)('a' + origin.X);
+                            }
+                            var pieceFile = (char)('0' + origin.X);
+                            var pieceRank = (char)('a' + origin.Y);
+                            var destString = ((char)('a' + dest.X)).ToString() + ((char)('1' + dest.Y)).ToString();
+                            var originString = "";
+                            var myPieces = Pieces.Where(x => x.Player == Parent.CurrentPlayer &&
+                            x.GetType() != typeof(Pawn) && x.GetType() == pieceType && x.CanReach(dest));
+                            // pawns dont need origin identifiers
+                            if (myPieces.Count() >= 1) // if one or more of my pieces of same type can also reach that location
+                            {
+                                // check if can be separated by file
+                                if(myPieces.Where(x => x.Pos.X == origin.X).Count() == 0)
+                                {
+                                    originString += pieceFile;
+                                } else if(myPieces.Where(x => x.Pos.Y == origin.Y).Count() == 0)
+                                {
+                                    originString += pieceRank;
+                                } else
+                                {
+                                    originString += pieceFile += pieceRank;
+                                }
+                            } else
+                            {
+                                // if its not a pawn or is taking, put piece identifier
+                                if (pieceType != typeof(Pawn) || destPiece != null || dest == EnPassant)
+                                {
+                                    moveString += pieceIdentifier;
+                                }
+                                moveString += originString;
+                                if(destPiece != null || dest == EnPassant)
+                                {
+                                    moveString += 'x';
+                                }
+                                moveString += destString;
+                            }
+                        }
+                        History.Add(moveString);
                     } catch(Exception e)
                     {
                         throw e;
@@ -760,13 +845,21 @@ namespace AegisLiveBot.Core.Services.Fun
                 } else
                 {
                     InCheck = true;
+                    // add check mark if check
+                    var moveString = History.Last() + '+';
+                    History.RemoveAt(History.Count() - 1);
+                    History.Add(moveString);
                     var kingReacheableSquares = kingPiece.GetReacheableSquares();
                     // check that there is a square that the king can move to without being checked
                     foreach (var kingReacheableSquare in kingReacheableSquares)
                     {
+                        // if this is a king take, temporarily swap out that piece
+                        var tempPiece = PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y];
+                        PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y] = kingPiece;
                         // if this is a square that escapes check, check if any other pieces can reach this square
                         var canReach = myPieces.FirstOrDefault(x => x.CanReach(kingReacheableSquare, true));
-                        if(canReach == null)
+                        PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y] = tempPiece;
+                        if (canReach == null)
                         {
                             return false;
                         }
@@ -779,8 +872,13 @@ namespace AegisLiveBot.Core.Services.Fun
                     {
                         var checkingPiece = checkingPieces[0];
                         // check if the checking piece can be captured without getting discover checked
+                        // we have already checked king takes checking piece, check everything else
                         foreach (var enemyPiece in enemyPieces)
                         {
+                            if(enemyPiece.GetType() == typeof(King))
+                            {
+                                continue;
+                            }
                             if (enemyPiece.CanReach(checkingPiece.Pos, true))
                             {
                                 try
@@ -853,6 +951,55 @@ namespace AegisLiveBot.Core.Services.Fun
                 Pieces.Remove(pawnToPromote);
                 Pieces.Add(newPiece);
                 PiecesOnBoard[pawnToPromote.Pos.X][pawnToPromote.Pos.Y] = newPiece;
+
+                char pieceIdentifier = '\0';
+                if (pieceType == typeof(Queen))
+                {
+                    pieceIdentifier = 'Q';
+                }
+                else if (pieceType == typeof(Bishop))
+                {
+                    pieceIdentifier = 'B';
+                }
+                else if (pieceType == typeof(Knight))
+                {
+                    pieceIdentifier = 'N';
+                }
+                else if (pieceType == typeof(Rook))
+                {
+                    pieceIdentifier = 'R';
+                }
+                var moveString = History.Last() + pieceIdentifier;
+                History.RemoveAt(History.Count() - 1);
+                History.Add(moveString);
+            }
+            internal string WriteHistory(Player gameEndCondition, bool checkMate = true)
+            {
+                if(gameEndCondition == Player.Draw)
+                {
+                    History.Add("½-½");
+                } else
+                {
+                    if (checkMate)
+                    {
+                        var moveString = History.Last();
+                        moveString = moveString.Remove(moveString.Length - 1) + '#';
+                        History.RemoveAt(History.Count() - 1);
+                        History.Add(moveString);
+                    }
+                    History.Add(gameEndCondition == Player.White ? "1-0" : "0-1");
+                }
+                var historyString = "```";
+                var padRight = History.Count() >= 200 ? 5 : 4;
+                for(var i = 0; i < History.Count(); i += 2)
+                {
+                    var index = (((i + 1) / 2 + 1).ToString() + '.').PadRight(padRight);
+                    var firstMove = History[i].PadRight(5);
+                    var secondMove = History.Count() != i + 1 ? History[i + 1] : "";
+                    historyString += $"{index}{firstMove} {secondMove}\n";
+                }
+                historyString += "```";
+                return historyString;
             }
             internal abstract class Piece
             {
@@ -1360,7 +1507,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         }
                         else
                         { // castling rules
-                            if (doNotCheckCastle)
+                            if (doNotCheckCastle || HasMoved)
                             {
                                 return false;
                             }
@@ -1369,7 +1516,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             {
                                 return false;
                             }
-                            if (!HasMoved && Math.Abs(Pos.X - dest.X) == 2 && Pos.Y == dest.Y)
+                            if (Math.Abs(Pos.X - dest.X) == 2 && Pos.Y == dest.Y)
                             {
                                 // cast king side
                                 if (dest.X > Pos.X)
@@ -1449,11 +1596,14 @@ namespace AegisLiveBot.Core.Services.Fun
                         new Point(Pos.X, Pos.Y - 1),
                         new Point(Pos.X - 1, Pos.Y + 1),
                         new Point(Pos.X - 1, Pos.Y),
-                        new Point(Pos.X - 1, Pos.Y - 1),
-                        // for castling
-                        new Point(Pos.X - 2, Pos.Y),
-                        new Point(Pos.X + 2, Pos.Y)
+                        new Point(Pos.X - 1, Pos.Y - 1)
                     };
+                    // for castling
+                    if (!HasMoved)
+                    {
+                        reacheableSquares.Add(new Point(Pos.X - 2, Pos.Y));
+                        reacheableSquares.Add(new Point(Pos.X + 2, Pos.Y));
+                    }
                     reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
                     return reacheableSquares;
                 }
