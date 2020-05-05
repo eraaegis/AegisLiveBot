@@ -86,7 +86,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 _whitePlayer = p1;
             }
             _client = client;
-            Board = new TestBoard(this);
+            Board = new ChessBoard(this);
         }
         public void Start()
         {
@@ -1707,42 +1707,6 @@ namespace AegisLiveBot.Core.Services.Fun
                     reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
                     return reacheableSquares;
                 }
-            }
-        }
-        internal class TestBoard : ChessBoard
-        {
-
-            internal TestBoard(ChessService parent)
-            {
-                Parent = parent;
-                Pieces = new List<Piece>
-                {
-                    new King(this, new Point(4, 3), Player.White),
-                    new Pawn(this, new Point(1, 3), Player.White),
-                    new Pawn(this, new Point(1, 5), Player.Black),
-                    new Pawn(this, new Point(2, 6), Player.Black),
-                    new Queen(this, new Point(0, 4), Player.Black),
-                    new King(this, new Point(4, 7), Player.Black),
-                    new Rook(this, new Point(3, 1), Player.Black),
-                    new Rook(this, new Point(5, 1), Player.Black),
-                    new Rook(this, new Point(7, 2), Player.Black),
-                    new Rook(this, new Point(7, 5), Player.Black)
-                };
-                PiecesOnBoard = new List<List<Piece>>();
-                for (var i = 0; i < 8; ++i)
-                {
-                    var column = new List<Piece>();
-                    for (var j = 0; j < 8; ++j)
-                    {
-                        column.Add(null);
-                    }
-                    PiecesOnBoard.Add(column);
-                }
-                foreach (var piece in Pieces)
-                {
-                    PiecesOnBoard[piece.Pos.X][piece.Pos.Y] = piece;
-                }
-                History = new List<string>();
             }
         }
     }
