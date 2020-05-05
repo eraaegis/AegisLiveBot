@@ -193,25 +193,31 @@ namespace AegisLiveBot.Core.Services.Streaming
         }
         private async Task GetNewToken()
         {
-            var hcHandle = new HttpClientHandler();
-            using (var hc = new HttpClient(hcHandle, false))
+            try
             {
-                hc.Timeout = TimeSpan.FromSeconds(5);
-                var stringContent = new FormUrlEncodedContent(new[]
+                var hcHandle = new HttpClientHandler();
+                using (var hc = new HttpClient(hcHandle, false))
                 {
+                    hc.Timeout = TimeSpan.FromSeconds(5);
+                    var stringContent = new FormUrlEncodedContent(new[]
+                    {
                     new KeyValuePair<string, string>("client_id", TwitchClientId),
                     new KeyValuePair<string, string>("client_secret", TwitchClientSecret),
                     new KeyValuePair<string, string>("grant_type", "client_credentials")
                 });
 
-                using (var response = await hc.PostAsync("https://id.twitch.tv/oauth2/token", stringContent))
-                {
-                    response.EnsureSuccessStatusCode();
-                    var jsonString = await response.Content.ReadAsStringAsync();
-                    var jsonObject = JObject.Parse(jsonString);
-                    var jsonData = jsonObject["access_token"];
-                    AccessToken = jsonData.ToString();
+                    using (var response = await hc.PostAsync("https://id.twitch.tv/oauth2/token", stringContent))
+                    {
+                        response.EnsureSuccessStatusCode();
+                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonObject = JObject.Parse(jsonString);
+                        var jsonData = jsonObject["access_token"];
+                        AccessToken = jsonData.ToString();
+                    }
                 }
+            } catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
     }
