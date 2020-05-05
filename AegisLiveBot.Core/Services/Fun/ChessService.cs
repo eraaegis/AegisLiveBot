@@ -101,6 +101,8 @@ namespace AegisLiveBot.Core.Services.Fun
                 var afk = false;
                 DrawBoard = true;
                 var flipBoard = false;
+                var whitePlayerDraw = false;
+                var blackPlayerDraw = false;
                 while (true)
                 {
                     if (HasMoved && !HasPromote)
@@ -115,6 +117,8 @@ namespace AegisLiveBot.Core.Services.Fun
                             curPlayer = _whitePlayer;
                         }
                         HasMoved = false;
+                        whitePlayerDraw = false;
+                        blackPlayerDraw = false;
                     }
                     if (DrawBoard)
                     {
@@ -136,6 +140,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         {
                             var msg = $"The channel has seen no activity for 10 minutes.\n";
                             await Dispose(msg).ConfigureAwait(false);
+                            break;
                         }
                         afk = true;
                         continue;
@@ -143,7 +148,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     afk = false;
                     var responseSplit = response.Result.Content.Split(" ");
                     var command = responseSplit[0];
-                    if(command.ToLower() == "help")
+                    if (command.ToLower() == "help")
                     {
                         var helpMsg = $"The following commands are available:\n";
                         helpMsg += $"resign: resign the game.\n";
@@ -151,16 +156,17 @@ namespace AegisLiveBot.Core.Services.Fun
                         helpMsg += $"promote q/r/n/b: when a pawn is at the last rank, select promotion\n";
                         helpMsg += $"flipboard: toggle drawing flipped boards for black player\n";
                         helpMsg += $"showboard: shows the current board\n";
+                        helpMsg += $"draw: draws the game if both players draw\n";
                         helpMsg += $"Supports algebraic notation, for inputs with algebraic notation, visit https://en.wikipedia.org/wiki/Algebraic_notation_(chess)";
                         await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
-                    } else if(command.ToLower() == "resign")
+                    } else if (command.ToLower() == "resign")
                     {
                         var msg = $"{((DiscordMember)response.Result.Author).DisplayName} has resigned the game!\n";
                         var history = Board.WriteHistory(response.Result.Author.Id == _blackPlayer.Id ? Player.White : Player.Black, false);
                         msg += history;
                         await Dispose(msg).ConfigureAwait(false);
                         break;
-                    } else if(!HasMoved && command.ToLower() == "move" && response.Result.Author.Id == curPlayer.Id)
+                    } else if (!HasMoved && command.ToLower() == "move" && response.Result.Author.Id == curPlayer.Id)
                     {
                         if (responseSplit.Length > 2)
                         {
@@ -193,12 +199,12 @@ namespace AegisLiveBot.Core.Services.Fun
                                         break;
                                     }
                                 }
-                            } catch(Exception e)
+                            } catch (Exception e)
                             {
                                 await _ch.SendMessageAsync(e.Message).ConfigureAwait(false);
                             }
                         }
-                    } else if(HasPromote && command.ToLower() == "promote" && response.Result.Author.Id == curPlayer.Id)
+                    } else if (HasPromote && command.ToLower() == "promote" && response.Result.Author.Id == curPlayer.Id)
                     {
                         try
                         {
@@ -256,7 +262,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         {
                             await _ch.SendMessageAsync(e.Message).ConfigureAwait(false);
                         }
-                    } else if(command.ToLower() == "flipBoard")
+                    } else if (command.ToLower() == "flipBoard")
                     {
                         flipBoard = !flipBoard;
                         var msg = flipBoard ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
@@ -265,10 +271,33 @@ namespace AegisLiveBot.Core.Services.Fun
                     {
                         var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
-                    } else if(response.Result.Author.Id == curPlayer.Id)
+                    } else if (command.ToLower() == "draw") {
+                        if(response.Result.Author.Id == _whitePlayer.Id)
+                        {
+                            whitePlayerDraw = !whitePlayerDraw;
+                        }
+                        if (response.Result.Author.Id == _blackPlayer.Id)
+                        {
+                            blackPlayerDraw = !blackPlayerDraw;
+                        }
+                        if(whitePlayerDraw && blackPlayerDraw)
+                        {
+                            var msg = $"Both players have agreed to a draw.";
+                            var history = Board.WriteHistory(Player.Draw);
+                            msg += history;
+                            await Dispose(msg).ConfigureAwait(false);
+                            break;
+                        } else if(whitePlayerDraw || blackPlayerDraw)
+                        {
+                            await _ch.SendMessageAsync("Draw has been offered.").ConfigureAwait(false);
+                        } else
+                        {
+                            await _ch.SendMessageAsync("Draw offer has been rescinded.").ConfigureAwait(false);
+                        }
+                    } else if (response.Result.Author.Id == curPlayer.Id)
                     {
                         // try to parse algebraic notation
-                        if(responseSplit.Length == 1)
+                        if (responseSplit.Length == 1)
                         {
                             try
                             {
