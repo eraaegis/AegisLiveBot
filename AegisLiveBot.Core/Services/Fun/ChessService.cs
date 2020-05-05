@@ -663,10 +663,20 @@ namespace AegisLiveBot.Core.Services.Fun
                         }
                         // check if this move puts you in check
                         var tempPiece = PiecesOnBoard[dest.X][dest.Y];
+                        var isEnPassant = dest == EnPassant && piece.GetType() == typeof(Pawn);
+                        var enPassantY = Parent.CurrentPlayer == Player.White ? dest.Y - 1 : dest.Y + 1;
+                        if (isEnPassant)
+                        {
+                            tempPiece = PiecesOnBoard[dest.X][enPassantY];
+                        }
                         try
                         {
                             PiecesOnBoard[origin.X][origin.Y] = null;
                             PiecesOnBoard[dest.X][dest.Y] = piece;
+                            if (isEnPassant)
+                            {
+                                PiecesOnBoard[dest.X][enPassantY] = null;
+                            }
                             if (piece.GetType() == typeof(King))
                             {
                                 piece.Pos = dest;
@@ -678,7 +688,14 @@ namespace AegisLiveBot.Core.Services.Fun
                         } finally
                         {
                             PiecesOnBoard[origin.X][origin.Y] = piece;
-                            PiecesOnBoard[dest.X][dest.Y] = tempPiece;
+                            if (isEnPassant)
+                            {
+                                PiecesOnBoard[dest.X][dest.Y] = null;
+                                PiecesOnBoard[dest.X][enPassantY] = tempPiece;
+                            } else
+                            {
+                                PiecesOnBoard[dest.X][dest.Y] = tempPiece;
+                            }
                             if (piece.GetType() == typeof(King))
                             {
                                 piece.Pos = origin;
@@ -691,9 +708,8 @@ namespace AegisLiveBot.Core.Services.Fun
                             Pieces.Remove(destPiece);
                         }
                         // enpassant move
-                        if (dest == EnPassant)
+                        if (isEnPassant)
                         {
-                            var enPassantY = EnPassantPlayer == Player.White ? dest.Y + 1 : dest.Y - 1;
                             var enPassantPiece = PiecesOnBoard[dest.X][enPassantY];
                             Pieces.Remove(enPassantPiece);
                             PiecesOnBoard[dest.X][enPassantY] = null;
@@ -914,6 +930,34 @@ namespace AegisLiveBot.Core.Services.Fun
                             if(enemyPiece.GetType() == typeof(King))
                             {
                                 continue;
+                            }
+                            // check en passant
+                            var enPassantY = Parent.CurrentPlayer == Player.White ? checkingPiece.Pos.Y - 1 : checkingPiece.Pos.Y + 1;
+                            if(enemyPiece.GetType() == typeof(Pawn) && EnPassant == new Point(checkingPiece.Pos.X, enPassantY))
+                            {
+                                if (enemyPiece.CanReach(new Point(checkingPiece.Pos.X, enPassantY), true))
+                                {
+                                    try
+                                    {
+                                        PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
+                                        PiecesOnBoard[checkingPiece.Pos.X][enPassantY] = enemyPiece;
+                                        CheckValidMove(true, checkingPiece);
+                                        return false;
+                                    }
+                                    catch (CheckMoveException)
+                                    {
+
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        throw e;
+                                    }
+                                    finally
+                                    {
+                                        PiecesOnBoard[checkingPiece.Pos.X][enPassantY] = null;
+                                        PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
+                                    }
+                                }
                             }
                             if (enemyPiece.CanReach(checkingPiece.Pos, true))
                             {
