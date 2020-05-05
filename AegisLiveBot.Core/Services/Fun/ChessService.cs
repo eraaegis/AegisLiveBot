@@ -100,7 +100,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 var curPlayer = _whitePlayer;
                 var afk = false;
                 DrawBoard = true;
-                var drawFlipped = true;
+                var drawFlipped = false;
                 while (true)
                 {
                     if (HasMoved && !HasPromote)
@@ -254,6 +254,10 @@ namespace AegisLiveBot.Core.Services.Fun
                         drawFlipped = !drawFlipped;
                         var msg = drawFlipped ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
                         await _ch.SendMessageAsync(msg).ConfigureAwait(false);
+                    } else if (command.ToLower() == "draw")
+                    {
+                        var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
+                        await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                     } else if(response.Result.Author.Id == curPlayer.Id)
                     {
                         // try to parse algebraic notation
@@ -539,6 +543,10 @@ namespace AegisLiveBot.Core.Services.Fun
             internal Player EnPassantPlayer { get; set; }
             internal bool InCheck { get; set; }
             internal Piece PawnToPromote { get; set; }
+            internal ChessBoard()
+            {
+
+            }
             internal ChessBoard(ChessService parent)
             {
                 Parent = parent;
@@ -902,6 +910,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         var enPassantY = Player == Player.White ? dest.Y - 1 : dest.Y + 1;
                         destPiece = Parent.PiecesOnBoard[dest.X][enPassantY];
                     }
+                    // for moving two squares, check forward square
+                    var blockingPiece = Player == Player.White ? Parent.PiecesOnBoard[Pos.X][Pos.Y + 1] : Parent.PiecesOnBoard[Pos.X][Pos.Y - 1];
                     // captures diagonally
                     if ((destPiece != null &&
                         Player != destPiece.Player &&
@@ -910,8 +920,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         // moves vertically, moves 2 if not moved
                         (!doNotCheckCastleOrPawnMove &&
                         destPiece == null &&
-                        ((Player == Player.White && dest.X == Pos.X && (!HasMoved && dest.Y == Pos.Y + 2 || dest.Y == Pos.Y + 1)) ||
-                        (Player == Player.Black && dest.X == Pos.X && (!HasMoved && dest.Y == Pos.Y - 2 || dest.Y == Pos.Y - 1)))))
+                        ((Player == Player.White && dest.X == Pos.X && ((!HasMoved && dest.Y == Pos.Y + 2 && blockingPiece == null) || dest.Y == Pos.Y + 1)) ||
+                        (Player == Player.Black && dest.X == Pos.X && ((!HasMoved && dest.Y == Pos.Y - 2 && blockingPiece == null) || dest.Y == Pos.Y - 1)))))
                     {
                         if (Math.Abs(Pos.Y - dest.Y) == 2)
                         {
@@ -1366,7 +1376,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 {
                                     var rookPiece = Parent.PiecesOnBoard[Pos.X + 3][Pos.Y];
                                     Rook rook = null;
-                                    if (rookPiece.GetType() == typeof(Rook))
+                                    if (rookPiece != null && rookPiece.GetType() == typeof(Rook))
                                     {
                                         rook = (Rook)rookPiece;
                                     }
@@ -1397,7 +1407,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 {
                                     var rookPiece = Parent.PiecesOnBoard[Pos.X - 4][Pos.Y];
                                     Rook rook = null;
-                                    if (rookPiece.GetType() == typeof(Rook))
+                                    if (rookPiece != null && rookPiece.GetType() == typeof(Rook))
                                     {
                                         rook = (Rook)rookPiece;
                                     }
