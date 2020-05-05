@@ -100,7 +100,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 var curPlayer = _whitePlayer;
                 var afk = false;
                 DrawBoard = true;
-                var drawFlipped = false;
+                var flipBoard = false;
                 while (true)
                 {
                     if (HasMoved && !HasPromote)
@@ -118,7 +118,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     if (DrawBoard)
                     {
-                        var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
+                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                         var colorMessage = CurrentPlayer == Player.White ? "White" : "Black";
                         var drawMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
                         if (HasPromote)
@@ -182,7 +182,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         {
                                             msg = $"Stalemate!\n";
                                         }
-                                        var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
+                                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                                         await Dispose(msg).ConfigureAwait(false);
                                         break;
@@ -249,14 +249,14 @@ namespace AegisLiveBot.Core.Services.Fun
                         {
                             await _ch.SendMessageAsync(e.Message).ConfigureAwait(false);
                         }
-                    } else if(command.ToLower() == "drawflip")
+                    } else if(command.ToLower() == "flipBoard")
                     {
-                        drawFlipped = !drawFlipped;
-                        var msg = drawFlipped ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
+                        flipBoard = !flipBoard;
+                        var msg = flipBoard ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
                         await _ch.SendMessageAsync(msg).ConfigureAwait(false);
-                    } else if (command.ToLower() == "draw")
+                    } else if (command.ToLower() == "showboard")
                     {
-                        var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
+                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                     } else if(response.Result.Author.Id == curPlayer.Id)
                     {
@@ -465,7 +465,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         {
                                             msg = $"Stalemate!\n";
                                         }
-                                        var imagePath = Draw(drawFlipped ? CurrentPlayer : Player.White);
+                                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                                         await Dispose(msg).ConfigureAwait(false);
                                         break;
