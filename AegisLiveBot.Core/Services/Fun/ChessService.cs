@@ -254,7 +254,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         drawFlipped = !drawFlipped;
                         var msg = drawFlipped ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
                         await _ch.SendMessageAsync(msg).ConfigureAwait(false);
-                    } else
+                    } else if(response.Result.Author.Id == curPlayer.Id)
                     {
                         // try to parse algebraic notation
                         if(responseSplit.Length == 1)
