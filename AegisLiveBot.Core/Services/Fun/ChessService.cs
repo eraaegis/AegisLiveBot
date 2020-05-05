@@ -86,7 +86,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 _whitePlayer = p1;
             }
             _client = client;
-            Board = new ChessBoard(this);
+            Board = new TestBoard(this);
         }
         public void Start()
         {
@@ -446,7 +446,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     else
                                     {
                                         // get all the pieces specified by piece type that can move to dest
-                                        var reacheablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.CanReach(dest) && x.Player == CurrentPlayer);
+                                        var reacheablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.Player == CurrentPlayer && x.CanReach(dest)).ToList();
                                         // if there is only one, move that one
                                         if (reacheablePieces.Count() == 1)
                                         {
@@ -457,11 +457,11 @@ namespace AegisLiveBot.Core.Services.Fun
                                             // get by file if set, or rank if set
                                             if (file != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.X == file - 'a');
+                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.X == file - 'a').ToList();
                                             }
                                             else if (rank != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.Y == rank - '1');
+                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.Y == rank - '1').ToList();
                                             }
                                             // if still more than 1 reacheable piece, unambiguous move
                                             if (reacheablePieces.Count() == 1)
@@ -863,10 +863,20 @@ namespace AegisLiveBot.Core.Services.Fun
                         Point tempPoint = enemyPiece.Pos;
                         foreach(var enemyReacheableSquare in enemyReacheableSquares)
                         {
+                            // check en passant
+                            var enPassantY = Parent.CurrentPlayer == Player.White ? enemyReacheableSquare.Y + 1 : enemyReacheableSquare.Y - 1;
+                            var isEnPassant = enemyPiece.GetType() == typeof(Pawn) && enemyReacheableSquare == EnPassant;
                             try
                             {
+                                if (isEnPassant)
+                                {
+                                    temp = PiecesOnBoard[enemyReacheableSquare.X][enPassantY];
+                                    PiecesOnBoard[enemyReacheableSquare.X][enPassantY] = null;
+                                } else
+                                {
+                                    temp = PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y];
+                                }
                                 PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
-                                temp = PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y];
                                 PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y] = enemyPiece;
                                 if(enemyPiece.GetType() == typeof(King))
                                 {
@@ -890,7 +900,13 @@ namespace AegisLiveBot.Core.Services.Fun
                                     enemyPiece.Pos = tempPoint;
                                 }
                                 PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
-                                PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y] = temp;
+                                if (isEnPassant)
+                                {
+                                    PiecesOnBoard[enemyReacheableSquare.X][enPassantY] = temp;
+                                } else
+                                {
+                                    PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y] = temp;
+                                }
                             }
                         }
                     }
@@ -1122,6 +1138,11 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     if (CanReach(dest))
                     {
+                        if (Math.Abs(Pos.Y - dest.Y) == 2)
+                        {
+                            Parent.EnPassant = new Point(Pos.X, (Pos.Y + dest.Y) / 2);
+                            Parent.EnPassantPlayer = Player;
+                        }
                         Pos = new Point(dest.X, dest.Y);
                         HasMoved = true;
                         if((Player == Player.White && Pos.Y == 7) ||
@@ -1154,11 +1175,6 @@ namespace AegisLiveBot.Core.Services.Fun
                         ((Player == Player.White && dest.X == Pos.X && ((!HasMoved && dest.Y == Pos.Y + 2 && blockingPiece == null) || dest.Y == Pos.Y + 1)) ||
                         (Player == Player.Black && dest.X == Pos.X && ((!HasMoved && dest.Y == Pos.Y - 2 && blockingPiece == null) || dest.Y == Pos.Y - 1)))))
                     {
-                        if (Math.Abs(Pos.Y - dest.Y) == 2)
-                        {
-                            Parent.EnPassant = new Point(Pos.X, (Pos.Y + dest.Y) / 2);
-                            Parent.EnPassantPlayer = Player;
-                        }
                         return true;
                     }
                     return false;
@@ -1691,6 +1707,42 @@ namespace AegisLiveBot.Core.Services.Fun
                     reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
                     return reacheableSquares;
                 }
+            }
+        }
+        internal class TestBoard : ChessBoard
+        {
+
+            internal TestBoard(ChessService parent)
+            {
+                Parent = parent;
+                Pieces = new List<Piece>
+                {
+                    new King(this, new Point(4, 3), Player.White),
+                    new Pawn(this, new Point(1, 3), Player.White),
+                    new Pawn(this, new Point(1, 5), Player.Black),
+                    new Pawn(this, new Point(2, 6), Player.Black),
+                    new Queen(this, new Point(0, 4), Player.Black),
+                    new King(this, new Point(4, 7), Player.Black),
+                    new Rook(this, new Point(3, 1), Player.Black),
+                    new Rook(this, new Point(5, 1), Player.Black),
+                    new Rook(this, new Point(7, 2), Player.Black),
+                    new Rook(this, new Point(7, 5), Player.Black)
+                };
+                PiecesOnBoard = new List<List<Piece>>();
+                for (var i = 0; i < 8; ++i)
+                {
+                    var column = new List<Piece>();
+                    for (var j = 0; j < 8; ++j)
+                    {
+                        column.Add(null);
+                    }
+                    PiecesOnBoard.Add(column);
+                }
+                foreach (var piece in Pieces)
+                {
+                    PiecesOnBoard[piece.Pos.X][piece.Pos.Y] = piece;
+                }
+                History = new List<string>();
             }
         }
     }
