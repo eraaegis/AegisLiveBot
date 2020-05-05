@@ -68,7 +68,7 @@ namespace AegisLiveBot.Core.Services.Fun
         private Player CurrentPlayer;
         internal bool HasMoved { get; set; }
         internal bool HasPromote { get; set; }
-        internal bool DrawBoard { get; set; }
+        internal bool ShowBoard { get; set; }
         public ChessService(DiscordChannel ch, DiscordMember p1, DiscordMember p2, DiscordClient client, string tempName)
         {
             _tempPath = Path.Combine(AppContext.BaseDirectory, "Temp/Images/Chess", tempName);
@@ -99,7 +99,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 CurrentPlayer = Player.White;
                 var curPlayer = _whitePlayer;
                 var afk = false;
-                DrawBoard = true;
+                ShowBoard = true;
                 var flipBoard = false;
                 var whitePlayerDraw = false;
                 var blackPlayerDraw = false;
@@ -120,17 +120,17 @@ namespace AegisLiveBot.Core.Services.Fun
                         whitePlayerDraw = false;
                         blackPlayerDraw = false;
                     }
-                    if (DrawBoard)
+                    if (ShowBoard)
                     {
-                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
+                        var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
                         var colorMessage = CurrentPlayer == Player.White ? "White" : "Black";
-                        var drawMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
+                        var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
                         if (HasPromote)
                         {
-                            drawMsg = $"Use: promote q/r/n/b to select the promotion.";
+                            showMsg = $"Use: promote q/r/n/b to select the promotion.";
                         }
-                        await _ch.SendFileAsync(imagePath, drawMsg).ConfigureAwait(false);
-                        DrawBoard = false;
+                        await _ch.SendFileAsync(imagePath, showMsg).ConfigureAwait(false);
+                        ShowBoard = false;
                     }
                     var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _whitePlayer.Id || x.Author.Id == _blackPlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
                     if (response.TimedOut)
@@ -139,6 +139,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         if (afk)
                         {
                             var msg = $"The channel has seen no activity for 10 minutes.\n";
+                            var history = Board.WriteHistory(Player.Draw, gameEnded: false);
+                            msg += history;
                             await Dispose(msg).ConfigureAwait(false);
                             break;
                         }
@@ -154,8 +156,9 @@ namespace AegisLiveBot.Core.Services.Fun
                         helpMsg += $"resign: resign the game.\n";
                         helpMsg += $"move <origin> <destination>: moves the piece designated in origin to destination. E.g move e2 e4\n";
                         helpMsg += $"promote q/r/n/b: when a pawn is at the last rank, select promotion\n";
-                        helpMsg += $"flipboard: toggle drawing flipped boards for black player\n";
+                        helpMsg += $"flipboard: toggle showing flipped boards for black player\n";
                         helpMsg += $"showboard: shows the current board\n";
+                        helpMsg += $"history: shows the history of the game\n";
                         helpMsg += $"draw: draws the game if both players draw\n";
                         helpMsg += $"Supports algebraic notation, for inputs with algebraic notation, visit https://en.wikipedia.org/wiki/Algebraic_notation_(chess)";
                         await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
@@ -191,7 +194,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         {
                                             msg = $"Stalemate!\n";
                                         }
-                                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
+                                        var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                                         var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
                                         msg += history;
@@ -235,7 +238,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 }
                                 if (!HasPromote)
                                 {
-                                    DrawBoard = true;
+                                    ShowBoard = true;
                                     if (Board.CheckEnd())
                                     {
                                         var msg = "";
@@ -265,14 +268,18 @@ namespace AegisLiveBot.Core.Services.Fun
                     } else if (command.ToLower() == "flipBoard")
                     {
                         flipBoard = !flipBoard;
-                        var msg = flipBoard ? $"Boards will now be drawn flipped for Black." : $"Boards will no longer be drawn flipped.";
+                        var msg = flipBoard ? $"Boards will now be shown flipped for Black." : $"Boards will no longer be shown flipped.";
                         await _ch.SendMessageAsync(msg).ConfigureAwait(false);
                     } else if (command.ToLower() == "showboard")
                     {
-                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
+                        var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                    } else if (command.ToLower() == "history")
+                    {
+                        var history = Board.WriteHistory(Player.Draw, gameEnded: false);
+                        await _ch.SendMessageAsync(history).ConfigureAwait(false);
                     } else if (command.ToLower() == "draw") {
-                        if(response.Result.Author.Id == _whitePlayer.Id)
+                        if (response.Result.Author.Id == _whitePlayer.Id)
                         {
                             whitePlayerDraw = !whitePlayerDraw;
                         }
@@ -280,14 +287,14 @@ namespace AegisLiveBot.Core.Services.Fun
                         {
                             blackPlayerDraw = !blackPlayerDraw;
                         }
-                        if(whitePlayerDraw && blackPlayerDraw)
+                        if (whitePlayerDraw && blackPlayerDraw)
                         {
                             var msg = $"Both players have agreed to a draw.";
                             var history = Board.WriteHistory(Player.Draw);
                             msg += history;
                             await Dispose(msg).ConfigureAwait(false);
                             break;
-                        } else if(whitePlayerDraw || blackPlayerDraw)
+                        } else if (whitePlayerDraw || blackPlayerDraw)
                         {
                             await _ch.SendMessageAsync("Draw has been offered.").ConfigureAwait(false);
                         } else
@@ -501,7 +508,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         {
                                             msg = $"Stalemate!\n";
                                         }
-                                        var imagePath = Draw(flipBoard ? CurrentPlayer : Player.White);
+                                        var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
                                         await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
                                         var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
                                         msg += history;
@@ -534,7 +541,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             throw new ParsePointException();
         }
-        private string Draw(Player player)
+        private string Show(Player player)
         {
             var pieces = Board.Pieces;
             var boardImage = new Bitmap(720, 720);
@@ -800,7 +807,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     Parent.HasPromote = true;
                 }
                 Parent.HasMoved = true;
-                Parent.DrawBoard = true;
+                Parent.ShowBoard = true;
             }
             // checks if current move will put you in check
             internal void CheckValidMove(bool currentPlayer = false, Piece ignorePiece = null)
@@ -1002,21 +1009,25 @@ namespace AegisLiveBot.Core.Services.Fun
                 History.RemoveAt(History.Count() - 1);
                 History.Add(moveString);
             }
-            internal string WriteHistory(Player gameEndCondition, bool checkMate = true)
+            internal string WriteHistory(Player gameEndCondition, bool checkMate = true, bool gameEnded = true)
             {
-                if(gameEndCondition == Player.Draw)
+                if (gameEnded)
                 {
-                    History.Add("½-½");
-                } else
-                {
-                    if (checkMate)
+                    if (gameEndCondition == Player.Draw)
                     {
-                        var moveString = History.Last();
-                        moveString = moveString.Remove(moveString.Length - 1) + '#';
-                        History.RemoveAt(History.Count() - 1);
-                        History.Add(moveString);
+                        History.Add("½-½");
                     }
-                    History.Add(gameEndCondition == Player.White ? "1-0" : "0-1");
+                    else
+                    {
+                        if (checkMate)
+                        {
+                            var moveString = History.Last();
+                            moveString = moveString.Remove(moveString.Length - 1) + '#';
+                            History.RemoveAt(History.Count() - 1);
+                            History.Add(moveString);
+                        }
+                        History.Add(gameEndCondition == Player.White ? "1-0" : "0-1");
+                    }
                 }
                 var historyString = "```";
                 var padRight = History.Count() >= 200 ? 5 : 4;
