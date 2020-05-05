@@ -59,7 +59,6 @@ namespace AegisLiveBot.Web.Commands.Fun
         }
         private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
         {
-            ctx.Message.DeleteAfter(3);
             if(otherUser == null)
             {
                 otherUser = ctx.Member;
