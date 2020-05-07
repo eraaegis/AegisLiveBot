@@ -4,7 +4,7 @@ This Discord bot is developed for ForgottenProject's Discord server. The current
 
 This is currently the ONLY Discord bot(unverfied) to implement the Tafl game, (or Tablut from Mount and Blade).
 
-This Discord bot also implemented the Chess game.
+This Discord bot also implemented the Chess game and the Chinese Chess(象棋zoengkei) game.
 
 The Discord bot can be developed into a general purpose bot depending on need, there is currently no plan to turn this into a public bot, but interested individuals can download the bot and host it on their own server.
 
