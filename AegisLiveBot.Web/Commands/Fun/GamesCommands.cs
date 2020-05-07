@@ -57,6 +57,19 @@ namespace AegisLiveBot.Web.Commands.Fun
             var gameName = "Chess";
             await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
         }
+
+        [Command("chinesechess")]
+        public async Task ChineseChess(CommandContext ctx, DiscordMember otherUser = null)
+        {
+            var gameType = typeof(ZoengKeiService);
+            var gameName = "Chinese Chess";
+            await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
+        }
+        [Command("zoengkei")]
+        public async Task ZoengKei(CommandContext ctx, DiscordMember otherUser = null)
+        {
+            await ChineseChess(ctx, otherUser).ConfigureAwait(false);
+        }
         private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
         {
             if(otherUser == null)

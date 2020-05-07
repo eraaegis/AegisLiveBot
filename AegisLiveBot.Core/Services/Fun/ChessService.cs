@@ -446,27 +446,27 @@ namespace AegisLiveBot.Core.Services.Fun
                                     else
                                     {
                                         // get all the pieces specified by piece type that can move to dest
-                                        var reacheablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.Player == CurrentPlayer && x.CanReach(dest));
+                                        var reachablePieces = Board.Pieces.Where(x => x.GetType() == movePieceType && x.Player == CurrentPlayer && x.CanReach(dest));
                                         // if there is only one, move that one
-                                        if (reacheablePieces.Count() == 1)
+                                        if (reachablePieces.Count() == 1)
                                         {
-                                            Board.TryMove(reacheablePieces.ElementAt(0).Pos, dest);
+                                            Board.TryMove(reachablePieces.ElementAt(0).Pos, dest);
                                         }
-                                        else if (reacheablePieces.Count() > 1)
+                                        else if (reachablePieces.Count() > 1)
                                         {
                                             // get by file if set, or rank if set
                                             if (file != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.X == file - 'a');
+                                                reachablePieces = reachablePieces.Where(x => x.Pos.X == file - 'a');
                                             }
                                             else if (rank != 'z')
                                             {
-                                                reacheablePieces = reacheablePieces.Where(x => x.Pos.Y == rank - '1');
+                                                reachablePieces = reachablePieces.Where(x => x.Pos.Y == rank - '1');
                                             }
-                                            // if still more than 1 reacheable piece, unambiguous move
-                                            if (reacheablePieces.Count() == 1)
+                                            // if still more than 1 reachable piece, unambiguous move
+                                            if (reachablePieces.Count() == 1)
                                             {
-                                                Board.TryMove(reacheablePieces.ElementAt(0).Pos, dest);
+                                                Board.TryMove(reachablePieces.ElementAt(0).Pos, dest);
                                             }
                                         }
                                     }
@@ -843,7 +843,7 @@ namespace AegisLiveBot.Core.Services.Fun
             {
                 var myPieces = Pieces.Where(x => x.Player == Parent.CurrentPlayer);
                 var enemyPieces = Pieces.Where(x => x.Player != Parent.CurrentPlayer);
-                var kingPiece = (King)enemyPieces.FirstOrDefault(x => x.GetType() == typeof(King));
+                var kingPiece = enemyPieces.FirstOrDefault(x => x.GetType() == typeof(King));
                 var checkingPieces = new List<Piece>();
                 foreach (var myPiece in myPieces)
                 {
@@ -858,29 +858,29 @@ namespace AegisLiveBot.Core.Services.Fun
                     // if not in check, check if there are any valid moves
                     foreach(var enemyPiece in enemyPieces)
                     {
-                        var enemyReacheableSquares = enemyPiece.GetReacheableSquares();
+                        var enemyReachableSquares = enemyPiece.GetReachableSquares();
                         Piece temp = null;
                         Point tempPoint = enemyPiece.Pos;
-                        foreach(var enemyReacheableSquare in enemyReacheableSquares)
+                        foreach(var enemyReachableSquare in enemyReachableSquares)
                         {
                             // check en passant
-                            var enPassantY = Parent.CurrentPlayer == Player.White ? enemyReacheableSquare.Y + 1 : enemyReacheableSquare.Y - 1;
-                            var isEnPassant = enemyPiece.GetType() == typeof(Pawn) && enemyReacheableSquare == EnPassant;
+                            var enPassantY = Parent.CurrentPlayer == Player.White ? enemyReachableSquare.Y + 1 : enemyReachableSquare.Y - 1;
+                            var isEnPassant = enemyPiece.GetType() == typeof(Pawn) && enemyReachableSquare == EnPassant;
                             try
                             {
                                 if (isEnPassant)
                                 {
-                                    temp = PiecesOnBoard[enemyReacheableSquare.X][enPassantY];
-                                    PiecesOnBoard[enemyReacheableSquare.X][enPassantY] = null;
+                                    temp = PiecesOnBoard[enemyReachableSquare.X][enPassantY];
+                                    PiecesOnBoard[enemyReachableSquare.X][enPassantY] = null;
                                 } else
                                 {
-                                    temp = PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y];
+                                    temp = PiecesOnBoard[enemyReachableSquare.X][enemyReachableSquare.Y];
                                 }
                                 PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
-                                PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y] = enemyPiece;
+                                PiecesOnBoard[enemyReachableSquare.X][enemyReachableSquare.Y] = enemyPiece;
                                 if(enemyPiece.GetType() == typeof(King))
                                 {
-                                    enemyPiece.Pos = enemyReacheableSquare;
+                                    enemyPiece.Pos = enemyReachableSquare;
                                 }
                                 CheckValidMove(true, temp);
                                 return false;
@@ -902,10 +902,10 @@ namespace AegisLiveBot.Core.Services.Fun
                                 PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
                                 if (isEnPassant)
                                 {
-                                    PiecesOnBoard[enemyReacheableSquare.X][enPassantY] = temp;
+                                    PiecesOnBoard[enemyReachableSquare.X][enPassantY] = temp;
                                 } else
                                 {
-                                    PiecesOnBoard[enemyReacheableSquare.X][enemyReacheableSquare.Y] = temp;
+                                    PiecesOnBoard[enemyReachableSquare.X][enemyReachableSquare.Y] = temp;
                                 }
                             }
                         }
@@ -917,22 +917,22 @@ namespace AegisLiveBot.Core.Services.Fun
                     var moveString = History.Last() + '+';
                     History.RemoveAt(History.Count() - 1);
                     History.Add(moveString);
-                    var kingReacheableSquares = kingPiece.GetReacheableSquares();
+                    var kingReachableSquares = kingPiece.GetReachableSquares();
                     // check that there is a square that the king can move to without being checked
-                    foreach (var kingReacheableSquare in kingReacheableSquares)
+                    foreach (var kingReachableSquare in kingReachableSquares)
                     {
                         // if this is a king take, temporarily swap out that piece
-                        var tempPiece = PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y];
-                        PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y] = kingPiece;
+                        var tempPiece = PiecesOnBoard[kingReachableSquare.X][kingReachableSquare.Y];
+                        PiecesOnBoard[kingReachableSquare.X][kingReachableSquare.Y] = kingPiece;
                         // if this is a square that escapes check, check if any other pieces can reach this square
-                        var canReach = myPieces.FirstOrDefault(x => x.CanReach(kingReacheableSquare, true));
-                        PiecesOnBoard[kingReacheableSquare.X][kingReacheableSquare.Y] = tempPiece;
+                        var canReach = myPieces.FirstOrDefault(x => x.CanReach(kingReachableSquare, true));
+                        PiecesOnBoard[kingReachableSquare.X][kingReachableSquare.Y] = tempPiece;
                         if (canReach == null)
                         {
                             return false;
                         }
                     }
-                    // if this is a double check, only king can move, therefore no reacheable square = checkmate
+                    // if this is a double check, only king can move, therefore no reachable square = checkmate
                     if (checkingPieces.Count >= 2)
                     {
                         return true;
@@ -1126,7 +1126,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
                 internal abstract bool CanReach(Point dest, bool doNotCheckCastleOrPawnMove = false);
                 internal virtual List<Point> GetPathToPos(Point pos) { return null; }
-                internal abstract List<Point> GetReacheableSquares();
+                internal abstract List<Point> GetReachableSquares();
             }
             internal class Pawn : Piece
             {
@@ -1179,9 +1179,9 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     return false;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>
+                    var reachableSquares = new List<Point>
                     {
                         new Point(Pos.X, Pos.Y + 1),
                         new Point(Pos.X, Pos.Y + 2),
@@ -1192,8 +1192,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         new Point(Pos.X + 1, Pos.Y - 1),
                         new Point(Pos.X - 1, Pos.Y - 1)
                     };
-                    reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
+                    return reachableSquares;
                 }
             }
             internal class Rook : Piece
@@ -1252,7 +1252,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
                 internal override List<Point> GetPathToPos(Point pos)
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     if(Pos.Y == pos.Y)
                     {
                         var i = Pos.X;
@@ -1264,7 +1264,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 break;
                             } else
                             {
-                                reacheableSquares.Add(new Point(i, Pos.Y));
+                                reachableSquares.Add(new Point(i, Pos.Y));
                             }
                         }
                     } else if(Pos.X == pos.X)
@@ -1278,22 +1278,22 @@ namespace AegisLiveBot.Core.Services.Fun
                                 break;
                             } else
                             {
-                                reacheableSquares.Add(new Point(Pos.X, i));
+                                reachableSquares.Add(new Point(Pos.X, i));
                             }
                         }
                     }
-                    return reacheableSquares;
+                    return reachableSquares;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     for(var i = 0; i < 8; ++i)
                     {
-                        reacheableSquares.Add(new Point(i, Pos.Y));
-                        reacheableSquares.Add(new Point(Pos.X, i));
+                        reachableSquares.Add(new Point(i, Pos.Y));
+                        reachableSquares.Add(new Point(Pos.X, i));
                     }
-                    reacheableSquares.RemoveAll(x => !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => !CanReach(x));
+                    return reachableSquares;
                 }
             }
             internal class Knight : Piece
@@ -1316,9 +1316,9 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     return false;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>
+                    var reachableSquares = new List<Point>
                     {
                         new Point(Pos.X + 2, Pos.Y + 1),
                         new Point(Pos.X + 2, Pos.Y - 1),
@@ -1329,8 +1329,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         new Point(Pos.X + 2, Pos.Y + 1),
                         new Point(Pos.X + 2, Pos.Y - 1)
                     };
-                    reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
+                    return reachableSquares;
                 }
             }
             internal class Bishop : Piece
@@ -1369,7 +1369,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
                 internal override List<Point> GetPathToPos(Point pos)
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     if (Pos != pos && Math.Abs(Pos.X - pos.X) == Math.Abs(Pos.Y - pos.Y))
                     {
                         var x = Pos.X;
@@ -1384,24 +1384,24 @@ namespace AegisLiveBot.Core.Services.Fun
                             }
                             else
                             {
-                                reacheableSquares.Add(new Point(x, y));
+                                reachableSquares.Add(new Point(x, y));
                             }
                         }
                     }
-                    return reacheableSquares;
+                    return reachableSquares;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     for (var i = 0; i < 7; ++i)
                     {
-                        reacheableSquares.Add(new Point(Pos.X + i + 1, Pos.Y + i + 1));
-                        reacheableSquares.Add(new Point(Pos.X - i - 1, Pos.Y + i + 1));
-                        reacheableSquares.Add(new Point(Pos.X + i + 1, Pos.Y - i - 1));
-                        reacheableSquares.Add(new Point(Pos.X - i - 1, Pos.Y - i - 1));
+                        reachableSquares.Add(new Point(Pos.X + i + 1, Pos.Y + i + 1));
+                        reachableSquares.Add(new Point(Pos.X - i - 1, Pos.Y + i + 1));
+                        reachableSquares.Add(new Point(Pos.X + i + 1, Pos.Y - i - 1));
+                        reachableSquares.Add(new Point(Pos.X - i - 1, Pos.Y - i - 1));
                     }
-                    reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
+                    return reachableSquares;
                 }
             }
             internal class Queen : Piece
@@ -1480,10 +1480,10 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
                 internal override List<Point> GetPathToPos(Point pos)
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     if(Pos == pos)
                     {
-                        return reacheableSquares;
+                        return reachableSquares;
                     }
                     if (Pos.Y == pos.Y)
                     {
@@ -1497,7 +1497,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             }
                             else
                             {
-                                reacheableSquares.Add(new Point(i, Pos.Y));
+                                reachableSquares.Add(new Point(i, Pos.Y));
                             }
                         }
                     }
@@ -1513,7 +1513,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             }
                             else
                             {
-                                reacheableSquares.Add(new Point(Pos.X, i));
+                                reachableSquares.Add(new Point(Pos.X, i));
                             }
                         }
                     } else if (Math.Abs(Pos.X - pos.X) == Math.Abs(Pos.Y - pos.Y))
@@ -1530,26 +1530,26 @@ namespace AegisLiveBot.Core.Services.Fun
                             }
                             else
                             {
-                                reacheableSquares.Add(new Point(x, y));
+                                reachableSquares.Add(new Point(x, y));
                             }
                         }
                     }
-                    return reacheableSquares;
+                    return reachableSquares;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>();
+                    var reachableSquares = new List<Point>();
                     for (var i = 0; i < 8; ++i)
                     {
-                        reacheableSquares.Add(new Point(i, Pos.Y));
-                        reacheableSquares.Add(new Point(Pos.X, i));
-                        reacheableSquares.Add(new Point(Pos.X + i + 1, Pos.Y + i + 1));
-                        reacheableSquares.Add(new Point(Pos.X - i - 1, Pos.Y + i + 1));
-                        reacheableSquares.Add(new Point(Pos.X + i + 1, Pos.Y - i - 1));
-                        reacheableSquares.Add(new Point(Pos.X - i - 1, Pos.Y - i - 1));
+                        reachableSquares.Add(new Point(i, Pos.Y));
+                        reachableSquares.Add(new Point(Pos.X, i));
+                        reachableSquares.Add(new Point(Pos.X + i + 1, Pos.Y + i + 1));
+                        reachableSquares.Add(new Point(Pos.X - i - 1, Pos.Y + i + 1));
+                        reachableSquares.Add(new Point(Pos.X + i + 1, Pos.Y - i - 1));
+                        reachableSquares.Add(new Point(Pos.X - i - 1, Pos.Y - i - 1));
                     }
-                    reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
+                    return reachableSquares;
                 }
             }
             internal class King : Piece
@@ -1629,7 +1629,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     }
                                     if (rook != null && !rook.HasMoved)
                                     {
-                                        // check if path is reacheable by enemies
+                                        // check if path is reachable by enemies
                                         var enemyPieces = Parent.Pieces.Where(x => x.Player != Player);
                                         foreach (var enemyPiece in enemyPieces)
                                         {
@@ -1660,7 +1660,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     }
                                     if (rook != null && !rook.HasMoved)
                                     {
-                                        // check if path is reacheable by enemies
+                                        // check if path is reachable by enemies
                                         var enemyPieces = Parent.Pieces.Where(x => x.Player != Player);
                                         foreach (var enemyPiece in enemyPieces)
                                         {
@@ -1686,9 +1686,9 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                     return false;
                 }
-                internal override List<Point> GetReacheableSquares()
+                internal override List<Point> GetReachableSquares()
                 {
-                    var reacheableSquares = new List<Point>{
+                    var reachableSquares = new List<Point>{
                         new Point(Pos.X + 1, Pos.Y + 1),
                         new Point(Pos.X + 1, Pos.Y),
                         new Point(Pos.X + 1, Pos.Y - 1),
@@ -1701,11 +1701,11 @@ namespace AegisLiveBot.Core.Services.Fun
                     // for castling
                     if (!HasMoved)
                     {
-                        reacheableSquares.Add(new Point(Pos.X - 2, Pos.Y));
-                        reacheableSquares.Add(new Point(Pos.X + 2, Pos.Y));
+                        reachableSquares.Add(new Point(Pos.X - 2, Pos.Y));
+                        reachableSquares.Add(new Point(Pos.X + 2, Pos.Y));
                     }
-                    reacheableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
-                    return reacheableSquares;
+                    reachableSquares.RemoveAll(x => x.X < 0 || x.X >= 8 || x.Y < 0 || x.Y >= 8 || !CanReach(x));
+                    return reachableSquares;
                 }
             }
         }
