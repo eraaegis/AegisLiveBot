@@ -76,32 +76,35 @@ namespace AegisLiveBot.Web.Commands.Fun
             {
                 otherUser = ctx.Member;
             }
-            var interactivity = ctx.Client.GetInteractivity();
-            var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a {gameName} game!\n";
-            msg += $"Type \"accept\" to d-d-duel!";
-            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
-            var tries = 3;
-            while (true)
+            else
             {
-                var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == otherUser.Id && x.ChannelId == ctx.Channel.Id).ConfigureAwait(false);
-                if (response.TimedOut)
+                var interactivity = ctx.Client.GetInteractivity();
+                var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a {gameName} game!\n";
+                msg += $"Type \"accept\" to d-d-duel!";
+                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+                var tries = 3;
+                while (true)
                 {
-                    await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
-                    return;
-                }
-                var responseMsg = response.Result.Content.ToLower();
-                response.Result.DeleteAfter(3);
-                if (responseMsg == "accept")
-                {
-                    break;
-                }
-                else
-                {
-                    --tries;
-                    if (tries == 0)
+                    var response = await interactivity.WaitForMessageAsync(x => x.Author.Id == otherUser.Id && x.ChannelId == ctx.Channel.Id).ConfigureAwait(false);
+                    if (response.TimedOut)
                     {
                         await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
                         return;
+                    }
+                    var responseMsg = response.Result.Content.ToLower();
+                    response.Result.DeleteAfter(3);
+                    if (responseMsg == "accept")
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        --tries;
+                        if (tries == 0)
+                        {
+                            await ctx.Channel.SendMessageAsync($"The game was not accepted.").ConfigureAwait(false);
+                            return;
+                        }
                     }
                 }
             }
