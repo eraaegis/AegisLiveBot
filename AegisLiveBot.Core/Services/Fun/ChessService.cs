@@ -1015,6 +1015,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         try
                                         {
                                             PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
+                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = enemyPiece;
                                             CheckValidMove(true);
                                             return false;
                                         } catch (CheckMoveException)
@@ -1027,6 +1028,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         finally
                                         {
                                             PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
+                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = null;
                                         }
                                     }
                                 }

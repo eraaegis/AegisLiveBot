@@ -89,7 +89,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 _whitePlayer = p1;
             }
             _client = client;
-            Board = new ChessBoard(this);
+            Board = new TestBoard(this);
         }
         public void Start()
         {
@@ -809,6 +809,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         try
                                         {
                                             PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
+                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = enemyPiece;
                                             CheckValidMove(true);
                                             return false;
                                         }
@@ -823,6 +824,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                         finally
                                         {
                                             PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
+                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = null;
                                         }
                                     }
                                 }
@@ -1411,6 +1413,62 @@ namespace AegisLiveBot.Core.Services.Fun
                     reachableSquares = reachableSquares.Where(x => x.X >= 0 && x.X <= 8 && x.Y >= 0 && x.Y <= 9 && CanReach(x)).ToList();
                     return reachableSquares;
                 }
+            }
+        }
+        internal class TestBoard : ChessBoard
+        {
+            internal TestBoard(ZoengKeiService parent)
+            {
+                Parent = parent;
+                Pieces = new List<Piece>
+                {
+                    new Chariot(this, new Point(0, 0), Player.White),
+                    new Chariot(this, new Point(8, 0), Player.White),
+                    new Horse(this, new Point(1, 0), Player.White),
+                    new Horse(this, new Point(7, 0), Player.White),
+                    new Cannon(this, new Point(4, 4), Player.White),
+                    new Cannon(this, new Point(1, 2), Player.White),
+                    new Elephant(this, new Point(2, 0), Player.White),
+                    new Elephant(this, new Point(6, 0), Player.White),
+                    new Advisor(this, new Point(3, 0), Player.White),
+                    new Advisor(this, new Point(5, 0), Player.White),
+                    new Soldier(this, new Point(0, 3), Player.White),
+                    new Soldier(this, new Point(2, 3), Player.White),
+                    new Soldier(this, new Point(6, 3), Player.White),
+                    new Soldier(this, new Point(8, 3), Player.White),
+                    new General(this, new Point(4, 0), Player.White),
+
+                    new Chariot(this, new Point(0, 9), Player.Black),
+                    new Chariot(this, new Point(8, 9), Player.Black),
+                    new Horse(this, new Point(1, 9), Player.Black),
+                    new Horse(this, new Point(7, 9), Player.Black),
+                    new Cannon(this, new Point(3, 3), Player.Black),
+                    new Cannon(this, new Point(7, 7), Player.Black),
+                    new Elephant(this, new Point(2, 9), Player.Black),
+                    new Elephant(this, new Point(6, 9), Player.Black),
+                    new Advisor(this, new Point(3, 9), Player.Black),
+                    new Advisor(this, new Point(5, 9), Player.Black),
+                    new Soldier(this, new Point(0, 6), Player.Black),
+                    new Soldier(this, new Point(2, 6), Player.Black),
+                    new Soldier(this, new Point(6, 6), Player.Black),
+                    new Soldier(this, new Point(8, 6), Player.Black),
+                    new General(this, new Point(4, 9), Player.Black)
+                };
+                PiecesOnBoard = new List<List<Piece>>();
+                for (var i = 0; i < 9; ++i)
+                {
+                    var column = new List<Piece>();
+                    for (var j = 0; j < 10; ++j)
+                    {
+                        column.Add(null);
+                    }
+                    PiecesOnBoard.Add(column);
+                }
+                foreach (var piece in Pieces)
+                {
+                    PiecesOnBoard[piece.Pos.X][piece.Pos.Y] = piece;
+                }
+                History = new List<string>();
             }
         }
     }
