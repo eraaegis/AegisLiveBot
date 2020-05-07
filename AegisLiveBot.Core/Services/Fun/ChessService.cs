@@ -341,24 +341,24 @@ namespace AegisLiveBot.Core.Services.Fun
                                 }
                                 // if castling
                                 var castling = command.ToLower().Replace("-", "");
-                                if ((castling == "oo" || castling == "00") && Board.PiecesOnBoard[4][0] != null)
+                                if (castling == "oo" || castling == "00")
                                 { // king side castling
-                                    if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
+                                    if (CurrentPlayer == Player.White)
                                     {
                                         Board.TryMove(new Point(4, 0), new Point(6, 0));
                                     }
-                                    else if (CurrentPlayer == Player.Black && Board.PiecesOnBoard[4][7].GetType() == typeof(King))
+                                    else if (CurrentPlayer == Player.Black)
                                     {
                                         Board.TryMove(new Point(4, 7), new Point(6, 7));
                                     }
                                 }
-                                else if ((castling == "ooo" || castling == "000") && Board.PiecesOnBoard[4][0] != null)
+                                else if (castling == "ooo" || castling == "000")
                                 { // queen side castling
-                                    if (CurrentPlayer == Player.White && Board.PiecesOnBoard[4][0].GetType() == typeof(King))
+                                    if (CurrentPlayer == Player.White)
                                     {
                                         Board.TryMove(new Point(4, 0), new Point(2, 0));
                                     }
-                                    else if (CurrentPlayer == Player.Black && Board.PiecesOnBoard[4][7].GetType() == typeof(King))
+                                    else if (CurrentPlayer == Player.Black)
                                     {
                                         Board.TryMove(new Point(4, 7), new Point(2, 7));
                                     }
