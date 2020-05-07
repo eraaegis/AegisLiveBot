@@ -345,22 +345,38 @@ namespace AegisLiveBot.Core.Services.Fun
                                 { // king side castling
                                     if (CurrentPlayer == Player.White)
                                     {
-                                        Board.TryMove(new Point(4, 0), new Point(6, 0));
+                                        var kingPiece = Board.PiecesOnBoard[4][0];
+                                        if(kingPiece != null && kingPiece.GetType() == typeof(King))
+                                        {
+                                            Board.TryMove(new Point(4, 0), new Point(6, 0));
+                                        }
                                     }
                                     else if (CurrentPlayer == Player.Black)
                                     {
-                                        Board.TryMove(new Point(4, 7), new Point(6, 7));
+                                        var kingPiece = Board.PiecesOnBoard[4][7];
+                                        if (kingPiece != null && kingPiece.GetType() == typeof(King))
+                                        {
+                                            Board.TryMove(new Point(4, 7), new Point(6, 7));
+                                        }
                                     }
                                 }
                                 else if (castling == "ooo" || castling == "000")
                                 { // queen side castling
                                     if (CurrentPlayer == Player.White)
                                     {
-                                        Board.TryMove(new Point(4, 0), new Point(2, 0));
+                                        var kingPiece = Board.PiecesOnBoard[4][0];
+                                        if (kingPiece != null && kingPiece.GetType() == typeof(King))
+                                        {
+                                            Board.TryMove(new Point(4, 0), new Point(2, 0));
+                                        }
                                     }
                                     else if (CurrentPlayer == Player.Black)
                                     {
-                                        Board.TryMove(new Point(4, 7), new Point(2, 7));
+                                        var kingPiece = Board.PiecesOnBoard[4][7];
+                                        if (kingPiece != null && kingPiece.GetType() == typeof(King))
+                                        {
+                                            Board.TryMove(new Point(4, 7), new Point(2, 7));
+                                        }
                                     }
                                 }
                                 else
