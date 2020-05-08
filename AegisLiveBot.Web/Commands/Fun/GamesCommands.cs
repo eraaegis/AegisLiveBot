@@ -1,6 +1,7 @@
 ﻿using AegisLiveBot.Core.Common;
 using AegisLiveBot.Core.Services;
 using AegisLiveBot.Core.Services.Fun;
+using AegisLiveBot.DAL;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
@@ -18,10 +19,12 @@ namespace AegisLiveBot.Web.Commands.Fun
     public class GamesCommands : BaseCommandModule
     {
         private readonly DbService _db;
+        private readonly string _prefix;
 
-        public GamesCommands(DbService db)
+        public GamesCommands(DbService db, ConfigJson configJson)
         {
             _db = db;
+            _prefix = configJson.Prefix;
         }
         [Command("setgamescategory")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -40,6 +43,18 @@ namespace AegisLiveBot.Web.Commands.Fun
                 await uow.SaveAsync().ConfigureAwait(false);
                 await ctx.Channel.SendMessageAsync($"Games category has been set to {cat.Mention}").ConfigureAwait(false);
             }
+        }
+
+        [Command("games")]
+        public async Task Games(CommandContext ctx)
+        {
+            var msg = "The following games are available:\n";
+            msg += "'tafl': <http://aagenielsen.dk/tafl_rules.php> \n";
+            msg += "'chess': <https://en.wikipedia.org/wiki/Chess> \n";
+            msg += "'zoengkei': <https://en.wikipedia.org/wiki/Xiangqi> \n";
+            msg += "'reversi': <https://en.wikipedia.org/wiki/Reversi> \n";
+            msg += $"Challenge any players with command above like so: {_prefix}tafl @victim";
+            await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
 
         [Command("tafl")]
