@@ -342,6 +342,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         if(command[0] == "help")
                         {
                             var helpMsg = $"Type 'help' for help, or 'resign' to resign game.\n";
+                            helpMsg += $"To place a piece, type the grid index. E.g d3";
                             helpMsg += $"For detailed rules, click here: https://en.wikipedia.org/wiki/Reversi#Rules";
                             await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
                         } else if(command[0] == "resign")
@@ -353,6 +354,8 @@ namespace AegisLiveBot.Core.Services.Fun
                         } else if(command[0] == "show")
                         {
                             board = Show();
+                            var colorMessage = CurrentPlayer == Piece.White ? "White" : "Black";
+                            var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
                             await _ch.SendFileAsync(board).ConfigureAwait(false);
                         } else if(response.Result.Author.Id == curPlayer.Id)
                         {
