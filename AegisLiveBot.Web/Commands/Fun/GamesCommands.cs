@@ -53,7 +53,7 @@ namespace AegisLiveBot.Web.Commands.Fun
             msg += "`chess`: <https://en.wikipedia.org/wiki/Chess> \n";
             msg += "`zoengkei`: <https://en.wikipedia.org/wiki/Xiangqi> \n";
             msg += "`reversi`: <https://en.wikipedia.org/wiki/Reversi> \n";
-            msg += $"Challenge any players with command above like so: {_prefix}tafl @victim";
+            msg += $"Challenge any players with command above like so: `{_prefix}tafl @victim`";
             await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
 
