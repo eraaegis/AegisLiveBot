@@ -160,7 +160,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         helpMsg += $"showboard: shows the current board\n";
                         helpMsg += $"history: shows the history of the game\n";
                         helpMsg += $"draw: draws the game if both players draw\n";
-                        helpMsg += $"Supports algebraic notation, for inputs with algebraic notation, visit https://en.wikipedia.org/wiki/Algebraic_notation_(chess)";
+                        helpMsg += $"Supports algebraic notation, for inputs with algebraic notation, visit <https://en.wikipedia.org/wiki/Algebraic_notation_(chess)>";
                         await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
                     } else if (command.ToLower() == "resign")
                     {

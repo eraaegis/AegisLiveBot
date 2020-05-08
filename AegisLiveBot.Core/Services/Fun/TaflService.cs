@@ -378,7 +378,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 await _ch.SendFileAsync(board, $"Tafl game has started!").ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
                 startMsg += $"Type 'help' for help, or 'quit' to quit game.\n";
-                startMsg += $"For detailed rules, click here: http://aagenielsen.dk/tafl_rules.php";
+                startMsg += $"For detailed rules, click here: <http://aagenielsen.dk/tafl_rules.php>";
                 await _ch.SendMessageAsync(startMsg).ConfigureAwait(false);
 
                 CurrentPlayer = Piece.Black;

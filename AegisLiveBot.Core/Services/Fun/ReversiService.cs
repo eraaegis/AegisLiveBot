@@ -272,10 +272,11 @@ namespace AegisLiveBot.Core.Services.Fun
                 var interactivity = _client.GetInteractivity();
 
                 var board = Show();
-                await _ch.SendFileAsync(board, $"Reversi game has started!").ConfigureAwait(false);
+                var initMsg = $"A Reversi game has started between { _whitePlayer.Mention} and { _blackPlayer.Mention}!\n";
+                initMsg += $"Use 'help' for commands\n";
+                await _ch.SendMessageAsync(initMsg).ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
-                startMsg += $"Use 'help' for commands";
-                await _ch.SendMessageAsync(startMsg).ConfigureAwait(false);
+                await _ch.SendFileAsync(board, startMsg).ConfigureAwait(false);
 
                 CurrentPlayer = Piece.Black;
                 var curPlayer = _blackPlayer;
@@ -342,13 +343,13 @@ namespace AegisLiveBot.Core.Services.Fun
                         if(command[0] == "help")
                         {
                             var helpMsg = $"Type 'help' for help, or 'resign' to resign game.\n";
-                            helpMsg += $"To place a piece, type the grid index. E.g d3";
-                            helpMsg += $"For detailed rules, click here: https://en.wikipedia.org/wiki/Reversi#Rules";
+                            helpMsg += $"To place a piece, type the grid index. E.g d3\n";
+                            helpMsg += $"For detailed rules, click here: <https://en.wikipedia.org/wiki/Reversi#Rules>";
                             await _ch.SendMessageAsync(helpMsg).ConfigureAwait(false);
                         } else if(command[0] == "resign")
                         {
                             var resignPlayer = response.Result.Author.Id == _blackPlayer.Id ? _blackPlayer.DisplayName : _whitePlayer.DisplayName;
-                            var resignMsg = $"{resignPlayer} has resigned the game!";
+                            var resignMsg = $"{resignPlayer} has resigned the game!\n";
                             await Dispose(resignMsg).ConfigureAwait(false);
                             break;
                         } else if(command[0] == "show")
