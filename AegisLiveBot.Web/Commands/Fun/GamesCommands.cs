@@ -70,6 +70,14 @@ namespace AegisLiveBot.Web.Commands.Fun
         {
             await ChineseChess(ctx, otherUser).ConfigureAwait(false);
         }
+
+        [Command("reversi")]
+        public async Task Reversi(CommandContext ctx, DiscordMember otherUser = null)
+        {
+            var gameType = typeof(ReversiService);
+            var gameName = "Reversi";
+            await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
+        }
         private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
         {
             if(otherUser == null)
