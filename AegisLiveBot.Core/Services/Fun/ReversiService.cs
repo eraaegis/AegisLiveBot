@@ -282,6 +282,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 var curPlayer = _blackPlayer;
                 var afk = false;
                 var hasMoved = false;
+                var cannotMove = false;
                 while (true)
                 {
                     if (hasMoved)
@@ -299,6 +300,12 @@ namespace AegisLiveBot.Core.Services.Fun
                         // check here since currentPlayer changes here
                         if (HasEnded())
                         {
+                            if (!cannotMove)
+                            {
+                                cannotMove = true;
+                                hasMoved = true;
+                                continue;
+                            }
                             CountPieces(out int blackPieces, out int whitePieces);
                             var msg = "Game has ended due to board full or no available moves!\n";
                             if (blackPieces > whitePieces)
@@ -313,11 +320,13 @@ namespace AegisLiveBot.Core.Services.Fun
                             {
                                 msg += "The game has drawn!\n";
                             }
+                            msg += $"{_blackPlayer.DisplayName}(Black) has {blackPieces} pieces against {_whitePlayer.DisplayName}(White)'s {whitePieces} pieces.";
                             board = Show();
                             await _ch.SendFileAsync(board).ConfigureAwait(false);
                             await Dispose(msg).ConfigureAwait(false);
                             break;
                         }
+                        cannotMove = false;
                         board = Show();
                         var colorMessage = CurrentPlayer == Piece.White ? "White" : "Black";
                         var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
