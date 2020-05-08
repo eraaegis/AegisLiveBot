@@ -49,10 +49,10 @@ namespace AegisLiveBot.Web.Commands.Fun
         public async Task Games(CommandContext ctx)
         {
             var msg = "The following games are available:\n";
-            msg += "'tafl': <http://aagenielsen.dk/tafl_rules.php> \n";
-            msg += "'chess': <https://en.wikipedia.org/wiki/Chess> \n";
-            msg += "'zoengkei': <https://en.wikipedia.org/wiki/Xiangqi> \n";
-            msg += "'reversi': <https://en.wikipedia.org/wiki/Reversi> \n";
+            msg += "`tafl`: <http://aagenielsen.dk/tafl_rules.php> \n";
+            msg += "`chess`: <https://en.wikipedia.org/wiki/Chess> \n";
+            msg += "`zoengkei`: <https://en.wikipedia.org/wiki/Xiangqi> \n";
+            msg += "`reversi`: <https://en.wikipedia.org/wiki/Reversi> \n";
             msg += $"Challenge any players with command above like so: {_prefix}tafl @victim";
             await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
