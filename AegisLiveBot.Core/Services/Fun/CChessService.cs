@@ -10,7 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static AegisLiveBot.Core.Services.Fun.ZoengKeiService.ChessBoard;
+using static AegisLiveBot.Core.Services.Fun.ZoengKeiService.CChessBoard;
 
 namespace AegisLiveBot.Core.Services.Fun
 {
@@ -61,7 +61,7 @@ namespace AegisLiveBot.Core.Services.Fun
     public class ZoengKeiService : IGameService
     {
         private readonly string _tempPath;
-        private readonly ChessBoard Board;
+        private readonly CChessBoard Board;
         private readonly DiscordChannel _ch;
         private readonly DiscordClient _client;
         private readonly DiscordMember _whitePlayer;
@@ -89,7 +89,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 _whitePlayer = p1;
             }
             _client = client;
-            Board = new ChessBoard(this);
+            Board = new CChessBoard(this);
         }
         public void Start()
         {
@@ -471,17 +471,17 @@ namespace AegisLiveBot.Core.Services.Fun
             Black,
             Draw
         }
-        internal class ChessBoard
+        internal class CChessBoard
         {
             internal List<List<Piece>> PiecesOnBoard { get; set; } // this allows for much faster retrieval
             internal List<Piece> Pieces { get; set; }
             internal ZoengKeiService Parent { get; set; }
             internal List<string> History { get; set; }
-            internal ChessBoard()
+            internal CChessBoard()
             {
 
             }
-            internal ChessBoard(ZoengKeiService parent)
+            internal CChessBoard(ZoengKeiService parent)
             {
                 Parent = parent;
                 Pieces = new List<Piece>
@@ -869,11 +869,11 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal abstract class Piece
             {
-                internal ChessBoard Parent { get; set; }
+                internal CChessBoard Parent { get; set; }
                 internal Point Pos { get; set; }
                 internal Player Player { get; set; }
                 internal Image Image { get; set; }
-                internal Piece(ChessBoard chessBoard, Point pos, Player player)
+                internal Piece(CChessBoard chessBoard, Point pos, Player player)
                 {
                     Parent = chessBoard;
                     Pos = pos;
@@ -898,7 +898,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Soldier : Piece
             {
-                internal Soldier(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Soldier(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._soldierWhite : ZoengKeiImage.Instance._soldierBlack;
                 }
@@ -942,7 +942,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Cannon : Piece
             {
-                internal Cannon(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Cannon(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._cannonWhite : ZoengKeiImage.Instance._cannonBlack;
                 }
@@ -1080,7 +1080,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Chariot : Piece
             {
-                internal Chariot(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Chariot(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._chariotWhite : ZoengKeiImage.Instance._chariotBlack;
                 }
@@ -1180,7 +1180,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Horse : Piece
             {
-                internal Horse(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Horse(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._horseWhite : ZoengKeiImage.Instance._horseBlack;
                 }
@@ -1260,7 +1260,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Elephant : Piece
             {
-                internal Elephant(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Elephant(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._elephantWhite : ZoengKeiImage.Instance._elephantBlack;
                 }
@@ -1303,7 +1303,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class Advisor : Piece
             {
-                internal Advisor(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal Advisor(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._advisorWhite : ZoengKeiImage.Instance._advisorBlack;
                 }
@@ -1340,7 +1340,7 @@ namespace AegisLiveBot.Core.Services.Fun
             }
             internal class General : Piece
             {
-                internal General(ChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
+                internal General(CChessBoard chessBoard, Point pos, Player player) : base(chessBoard, pos, player)
                 {
                     Image = player == Player.White ? ZoengKeiImage.Instance._generalWhite : ZoengKeiImage.Instance._generalBlack;
                 }
