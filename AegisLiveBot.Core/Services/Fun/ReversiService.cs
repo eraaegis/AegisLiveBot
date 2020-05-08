@@ -326,10 +326,14 @@ namespace AegisLiveBot.Core.Services.Fun
                             await Dispose(msg).ConfigureAwait(false);
                             break;
                         }
-                        cannotMove = false;
-                        board = Show();
                         var colorMessage = CurrentPlayer == Piece.White ? "White" : "Black";
                         var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
+                        if (cannotMove)
+                        {
+                            showMsg = $"The opponent has no available move!\n" + showMsg;
+                            cannotMove = false;
+                        }
+                        board = Show();
                         await _ch.SendFileAsync(board, showMsg).ConfigureAwait(false);
                     }
                     var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _whitePlayer.Id || x.Author.Id == _blackPlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
