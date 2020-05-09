@@ -404,6 +404,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     {
                                         var movePieceChar = command.First();
                                         command = command.Remove(0, 1);
+                                        var incorrectPiece = false;
                                         switch (movePieceChar)
                                         {
                                             case 'Q':
@@ -425,8 +426,15 @@ namespace AegisLiveBot.Core.Services.Fun
                                                 if (movePieceChar >= 'a' && movePieceChar <= 'h')
                                                 {
                                                     file = movePieceChar;
+                                                } else
+                                                {
+                                                    incorrectPiece = true;
                                                 }
                                                 break;
+                                        }
+                                        if (incorrectPiece)
+                                        {
+                                            continue;
                                         }
                                     }
                                     // if there is anything left, it is identifying

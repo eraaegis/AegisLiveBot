@@ -316,6 +316,9 @@ namespace AegisLiveBot.Core.Services.Fun
                                         case 'H':
                                             movePieceType = typeof(Horse);
                                             break;
+                                        case 'N':
+                                            movePieceType = typeof(Horse);
+                                            break;
                                         case 'R':
                                             movePieceType = typeof(Chariot);
                                             break;
@@ -753,79 +756,71 @@ namespace AegisLiveBot.Core.Services.Fun
                             return false;
                         }
                     }
-                    // if this is a double check, only king can move, therefore no reachable square = checkmate
-                    if (checkingPieces.Count >= 2)
+                    var checkingPiece = checkingPieces[0];
+                    // check if the checking piece can be captured without getting discover checked
+                    // we have already checked king takes checking piece, check everything else
+                    foreach (var enemyPiece in enemyPieces)
+                    {
+                        if (enemyPiece.GetType() == typeof(General))
+                        {
+                            continue;
+                        }
+                        if (enemyPiece.CanReach(checkingPiece.Pos))
+                        {
+                            try
+                            {
+                                PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
+                                CheckValidMove(true, checkingPiece);
+                                return false;
+                            }
+                            catch (CheckMoveException)
+                            {
+
+                            }
+                            catch (Exception e)
+                            {
+                                throw e;
+                            }
+                            finally
+                            {
+                                PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
+                            }
+                        }
+                    }
+                    // if checking piece is a soldier, it cannot be blocked, therefore cant capture = checkmate
+                    if (checkingPiece.GetType() == typeof(Soldier))
                     {
                         return true;
                     }
                     else
+                    // otherwise check if can be blocked
                     {
-                        var checkingPiece = checkingPieces[0];
-                        // check if the checking piece can be captured without getting discover checked
-                        // we have already checked king takes checking piece, check everything else
-                        foreach (var enemyPiece in enemyPieces)
+                        var blockeableSquares = checkingPiece.GetPathToPos(generalPiece.Pos);
+                        foreach (var blockeableSquare in blockeableSquares)
                         {
-                            if (enemyPiece.GetType() == typeof(General))
+                            foreach (var enemyPiece in enemyPieces)
                             {
-                                continue;
-                            }
-                            if (enemyPiece.CanReach(checkingPiece.Pos))
-                            {
-                                try
+                                if (enemyPiece.CanReach(blockeableSquare))
                                 {
-                                    PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
-                                    CheckValidMove(true, checkingPiece);
-                                    return false;
-                                }
-                                catch (CheckMoveException)
-                                {
-
-                                }
-                                catch (Exception e)
-                                {
-                                    throw e;
-                                }
-                                finally
-                                {
-                                    PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
-                                }
-                            }
-                        }
-                        // if checking piece is a soldier, it cannot be blocked, therefore cant capture = checkmate
-                        if (checkingPiece.GetType() == typeof(Soldier))
-                        {
-                            return true;
-                        }
-                        else
-                        // otherwise check if can be blocked
-                        {
-                            var blockeableSquares = checkingPiece.GetPathToPos(generalPiece.Pos);
-                            foreach (var blockeableSquare in blockeableSquares)
-                            {
-                                foreach (var enemyPiece in enemyPieces)
-                                {
-                                    if (enemyPiece.CanReach(blockeableSquare))
+                                    try
                                     {
-                                        try
-                                        {
-                                            PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
-                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = enemyPiece;
-                                            CheckValidMove(true);
-                                            return false;
-                                        }
-                                        catch (CheckMoveException)
-                                        {
+                                        PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = null;
+                                        PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = enemyPiece;
+                                        CheckValidMove(true);
+                                        return false;
+                                    }
+                                    catch (CheckMoveException)
+                                    {
 
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            throw e;
-                                        }
-                                        finally
-                                        {
-                                            PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
-                                            PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = null;
-                                        }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        throw e;
+                                    }
+                                    finally
+                                    {
+                                        PiecesOnBoard[enemyPiece.Pos.X][enemyPiece.Pos.Y] = enemyPiece;
+                                        PiecesOnBoard[blockeableSquare.X][blockeableSquare.Y] = null;
                                     }
                                 }
                             }
