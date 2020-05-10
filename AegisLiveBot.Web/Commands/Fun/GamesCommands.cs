@@ -53,6 +53,7 @@ namespace AegisLiveBot.Web.Commands.Fun
             msg += "`chess`: <https://en.wikipedia.org/wiki/Chess> \n";
             msg += "`zoengkei`: <https://en.wikipedia.org/wiki/Xiangqi> \n";
             msg += "`reversi`: <https://en.wikipedia.org/wiki/Reversi> \n";
+            msg += "`oldmaid`: <https://en.wikipedia.org/wiki/Old_Maid> \n";
             msg += $"Challenge any players with command above like so: `{_prefix}tafl @victim`";
             await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
         }
@@ -93,6 +94,14 @@ namespace AegisLiveBot.Web.Commands.Fun
             var gameName = "Reversi";
             await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
         }
+
+        [Command("oldmaid")]
+        public async Task OldMaid(CommandContext ctx, DiscordMember otherUser = null)
+        {
+            var gameType = typeof(OldMaidService);
+            var gameName = "Old Maid";
+            await StartGame(ctx, otherUser, gameType, gameName).ConfigureAwait(false);
+        }
         private async Task StartGame(CommandContext ctx, DiscordMember otherUser, Type gameType, string gameName)
         {
             if(otherUser == null)
@@ -102,7 +111,12 @@ namespace AegisLiveBot.Web.Commands.Fun
             else
             {
                 var interactivity = ctx.Client.GetInteractivity();
-                var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to a {gameName} game!\n";
+                var article = "a";
+                var firstChar = gameName.ToLower()[0];
+                if(firstChar == 'a' || firstChar == 'e' || firstChar == 'i' || firstChar == 'o' || firstChar == 'u'){
+                    article = "an";
+                }
+                var msg = $"{ctx.Member.Mention} has challenged {otherUser.Mention} to {article} {gameName} game!\n";
                 msg += $"Type \"accept\" to d-d-duel!";
                 await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
                 var tries = 3;
@@ -139,12 +153,12 @@ namespace AegisLiveBot.Web.Commands.Fun
                     var catId = serverSetting.GamesCategory;
                     var cat = ctx.Guild.GetChannel(catId);
                     var tempName = Path.GetRandomFileName();
-                    var chName = $"{gameName} Game {tempName}";
+                    var chName = $"{gameName} {tempName}";
                     var chs = await ctx.Guild.GetChannelsAsync().ConfigureAwait(false);
                     while (chs.FirstOrDefault(x => x.Name == chName) != null)
                     {
                         tempName = Path.GetRandomFileName();
-                        chName = $"{gameName} Game {tempName}";
+                        chName = $"{gameName} {tempName}";
                     }
                     var ch = await ctx.Guild.CreateChannelAsync(chName, ChannelType.Text, cat).ConfigureAwait(false);
                     await ch.AddOverwriteAsync(ctx.Guild.EveryoneRole, Permissions.None, Permissions.SendMessages).ConfigureAwait(false);
