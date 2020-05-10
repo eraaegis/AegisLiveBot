@@ -288,7 +288,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 {
                     return "You have won the game!";
                 }
-                return $"{MatchPlayer.Player.DisplayName} has won the game!";
+                return $"{WonPlayer.Player.DisplayName} has won the game!";
             }
             // if anyone got a match previously, return match
             if (HasMatch)
