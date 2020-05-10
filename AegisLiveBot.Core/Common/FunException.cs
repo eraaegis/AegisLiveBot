@@ -38,4 +38,12 @@ namespace AegisLiveBot.Core.Common
     {
         public InvalidPromotionException() : base("Please specify promotion choice with: promote q/r/k/b") { }
     }
+    public class InvalidCardException : FunException
+    {
+        public InvalidCardException() : base("Invalid card choice!") { }
+    }
+    public class NotYourTurnException : FunException
+    {
+        public NotYourTurnException() : base("It is not your turn yet!") { }
+    }
 }
