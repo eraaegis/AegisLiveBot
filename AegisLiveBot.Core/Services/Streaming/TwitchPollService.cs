@@ -38,13 +38,19 @@ namespace AegisLiveBot.Core.Services.Streaming
 
         _twitchPollTimer = new Timer(async (state) =>
             {
-                if (!IsPolling)
+                try
                 {
-                    if (AccessToken == "")
+                    if (!IsPolling)
                     {
-                        await GetNewToken().ConfigureAwait(false);
-                    }
+                        if (AccessToken == "")
+                        {
+                            await GetNewToken().ConfigureAwait(false);
+                        }
                         await TryPollTwitchStreams().ConfigureAwait(false);
+                    }
+                } catch(Exception e)
+                {
+                    Console.WriteLine(e.Message);
                 }
             }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
