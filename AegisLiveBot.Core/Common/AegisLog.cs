@@ -17,10 +17,12 @@ namespace AegisLiveBot.Core.Common
                 w.Write("\r\nLog Entry: ");
                 w.WriteLine($"{DateTime.Now.ToLongTimeString()} {DateTime.Now.ToLongDateString()}");
                 w.WriteLine("  :");
+                Console.Write(logMessage);
                 w.WriteLine($"  :{logMessage}");
                 w.WriteLine("-------------------------------");
                 if (e != null)
                 {
+                    Console.Write(e.StackTrace);
                     w.WriteLine($"Stack trace :{e.StackTrace}");
                     w.WriteLine("-------------------------------");
                 }
