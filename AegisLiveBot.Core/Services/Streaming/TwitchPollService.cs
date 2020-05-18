@@ -1,4 +1,5 @@
-﻿using AegisLiveBot.DAL;
+﻿using AegisLiveBot.Core.Common;
+using AegisLiveBot.DAL;
 using AegisLiveBot.DAL.Models.Streaming;
 using DSharpPlus;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                     }
                 } catch(Exception e)
                 {
-                    Console.WriteLine(e.Message);
+                    AegisLog.Log(e.Message, e);
                 }
             }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
         }
