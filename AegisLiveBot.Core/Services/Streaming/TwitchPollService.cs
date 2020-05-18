@@ -14,6 +14,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace AegisLiveBot.Core.Services.Streaming
 {
@@ -25,19 +26,24 @@ namespace AegisLiveBot.Core.Services.Streaming
     {
         private readonly DbService _db;
         private readonly DiscordClient _client;
-        private readonly Timer _twitchPollTimer;
+        private readonly System.Threading.Timer _twitchPollTimer;
         private string TwitchClientId = "";
         private string TwitchClientSecret = "";
         private string AccessToken = "";
         private bool IsPolling = false;
+
+        private readonly System.Timers.Timer _accessTokenTimer;
         public TwitchPollService(DbService db, DiscordClient client, ConfigJson configJson)
         {
             _db = db;
             _client = client;
             TwitchClientId = configJson.TwitchClientId;
             TwitchClientSecret = configJson.TwitchClientSecret;
+            _accessTokenTimer = new System.Timers.Timer(60000);
+            _accessTokenTimer.Elapsed += OnTimedEvent;
+            _accessTokenTimer.Enabled = false;
 
-        _twitchPollTimer = new Timer(async (state) =>
+        _twitchPollTimer = new System.Threading.Timer(async (state) =>
             {
                 try
                 {
@@ -53,7 +59,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 {
                     AegisLog.Log(e.Message, e);
                 }
-            }, null, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(60));
+            }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(60));
         }
         private async Task TryPollTwitchStreams()
         {
@@ -143,10 +149,16 @@ namespace AegisLiveBot.Core.Services.Streaming
                         {
                             await Task.Delay(5000).ConfigureAwait(false);
                         }
+                        var responseError = "";
                         try
                         {
                             var jsonString = await response.Content.ReadAsStringAsync();
                             var jsonObject = JObject.Parse(jsonString);
+                            var jsonError = jsonObject["status"];
+                            if (jsonError != null)
+                            {
+                                responseError = jsonObject["status"].ToString();
+                            }
                             var jsonData = jsonObject["data"];
                             JToken jsonType = null;
                             if (jsonData.Count() != 0)
@@ -155,6 +167,11 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
 
                             var guild = _client.Guilds.FirstOrDefault(x => x.Value.Id == liveUser.GuildId).Value;
+                            if (guild == null)
+                            {
+                                AegisLog.Log($"Server does not exist!");
+                                return false;
+                            }
                             var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
                             if (guild == null || user == null)
                             {
@@ -190,7 +207,10 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
                         } catch(Exception e)
                         {
-                            await GetNewToken().ConfigureAwait(false);
+                            if(responseError == "401")
+                            {
+                                await GetNewToken().ConfigureAwait(false);
+                            }
                             AegisLog.Log(e.Message, e);
                         }
                     }
@@ -198,8 +218,17 @@ namespace AegisLiveBot.Core.Services.Streaming
                 }
             }
         }
+        private void OnTimedEvent(Object source, ElapsedEventArgs e)
+        {
+            _accessTokenTimer.Enabled = false;
+        }
         private async Task GetNewToken()
         {
+            if (_accessTokenTimer.Enabled)
+            {
+                return;
+            }
+            _accessTokenTimer.Enabled = true;
             try
             {
                 var hcHandle = new HttpClientHandler();
