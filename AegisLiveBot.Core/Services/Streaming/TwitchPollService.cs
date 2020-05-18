@@ -94,7 +94,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                                 var user = await guild.GetMemberAsync(nonPriorityUser.UserId).ConfigureAwait(false);
                                 if (guild == null || user == null)
                                 {
-                                    Console.WriteLine($"Server or User does not exist!");
+                                    AegisLog.Log($"Server or User does not exist!");
                                     uow.LiveUsers.RemoveByGuildIdUserId(nonPriorityUser.GuildId, nonPriorityUser.UserId);
                                     await uow.SaveAsync().ConfigureAwait(false);
                                     continue;
@@ -102,7 +102,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                                 var role = guild.GetRole(serverSetting.RoleId);
                                 if (role == null)
                                 {
-                                    Console.WriteLine($"Role does not exist!");
+                                    AegisLog.Log($"Role does not exist!");
                                     continue;
                                 }
                                 await user.RevokeRoleAsync(role);
@@ -158,7 +158,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                             var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
                             if (guild == null || user == null)
                             {
-                                Console.WriteLine($"Server or User does not exist!");
+                                AegisLog.Log($"Server or User does not exist!");
                                 uow.LiveUsers.RemoveByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
                                 await uow.SaveAsync().ConfigureAwait(false);
                                 return false;
@@ -167,14 +167,14 @@ namespace AegisLiveBot.Core.Services.Streaming
                             await uow.SaveAsync().ConfigureAwait(false);
                             if (serverSetting == null || serverSetting.RoleId == 0)
                             {
-                                Console.WriteLine($"Streamer role not set!");
+                                AegisLog.Log($"Streamer role not set!");
                             }
                             else
                             {
                                 var role = guild.GetRole(serverSetting.RoleId);
                                 if (role == null)
                                 {
-                                    Console.WriteLine($"Role does not exist!");
+                                    AegisLog.Log($"Role does not exist!");
                                     return false;
                                 }
                                 if (jsonType != null && jsonType.ToString() == "live")
@@ -191,7 +191,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                         } catch(Exception e)
                         {
                             await GetNewToken().ConfigureAwait(false);
-                            Console.WriteLine(e.Message);
+                            AegisLog.Log(e.Message, e);
                         }
                     }
                     return false;
@@ -224,7 +224,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 }
             } catch(Exception e)
             {
-                Console.WriteLine(e.Message);
+                AegisLog.Log(e.Message, e);
             }
         }
     }

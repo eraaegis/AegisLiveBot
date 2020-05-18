@@ -457,7 +457,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 return imagePath;
             } catch(Exception e)
             {
-                Console.Write(e.Message);
+                AegisLog.Log(e.Message, e);
             }
             return "";
         }
