@@ -26,7 +26,7 @@ namespace AegisLiveBot.Core.Services.Streaming
     {
         private readonly DbService _db;
         private readonly DiscordClient _client;
-        private readonly System.Threading.Timer _twitchPollTimer;
+        private System.Threading.Timer _twitchPollTimer;
         private string TwitchClientId = "";
         private string TwitchClientSecret = "";
         private string AccessToken = "";
@@ -42,8 +42,11 @@ namespace AegisLiveBot.Core.Services.Streaming
             _accessTokenTimer = new System.Timers.Timer(60000);
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
-
-        _twitchPollTimer = new System.Threading.Timer(async (state) =>
+            ResetPollTimer();
+        }
+        private void ResetPollTimer()
+        {
+            _twitchPollTimer = new System.Threading.Timer(async (state) =>
             {
                 try
                 {
@@ -55,9 +58,14 @@ namespace AegisLiveBot.Core.Services.Streaming
                         }
                         await TryPollTwitchStreams().ConfigureAwait(false);
                     }
-                } catch(Exception e)
+                }
+                catch (Exception e)
                 {
                     AegisLog.Log(e.Message, e);
+                }
+                finally
+                {
+                    ResetPollTimer();
                 }
             }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(60));
         }
