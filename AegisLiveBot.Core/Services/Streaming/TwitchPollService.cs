@@ -42,6 +42,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             _accessTokenTimer = new System.Timers.Timer(60000);
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
+            _twitchPollTimer = new System.Timers.Timer();
             _twitchPollTimer.Interval = 60000;
             _twitchPollTimer.Elapsed += PollTwitchStreams;
             _twitchPollTimer.AutoReset = true;
