@@ -26,7 +26,7 @@ namespace AegisLiveBot.Core.Services.Streaming
     {
         private readonly DbService _db;
         private readonly DiscordClient _client;
-        private System.Threading.Timer _twitchPollTimer;
+        private System.Timers.Timer _twitchPollTimer;
         private string TwitchClientId = "";
         private string TwitchClientSecret = "";
         private string AccessToken = "";
@@ -42,32 +42,28 @@ namespace AegisLiveBot.Core.Services.Streaming
             _accessTokenTimer = new System.Timers.Timer(60000);
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
-            ResetPollTimer();
+            _twitchPollTimer.Interval = 60000;
+            _twitchPollTimer.Elapsed += PollTwitchStreams;
+            _twitchPollTimer.AutoReset = true;
+            _twitchPollTimer.Start();
         }
-        private void ResetPollTimer()
+        private async void PollTwitchStreams(object Sender, System.Timers.ElapsedEventArgs e)
         {
-            _twitchPollTimer = new System.Threading.Timer(async (state) =>
+            try
             {
-                try
+                if (!IsPolling)
                 {
-                    if (!IsPolling)
+                    if (AccessToken == "")
                     {
-                        if (AccessToken == "")
-                        {
-                            await GetNewToken().ConfigureAwait(false);
-                        }
-                        await TryPollTwitchStreams().ConfigureAwait(false);
+                        await GetNewToken().ConfigureAwait(false);
                     }
+                    await TryPollTwitchStreams().ConfigureAwait(false);
                 }
-                catch (Exception e)
-                {
-                    AegisLog.Log(e.Message, e);
-                }
-                finally
-                {
-                    ResetPollTimer();
-                }
-            }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(60));
+            }
+            catch (Exception ex)
+            {
+                AegisLog.Log(ex.Message, ex);
+            }
         }
         private async Task TryPollTwitchStreams()
         {
