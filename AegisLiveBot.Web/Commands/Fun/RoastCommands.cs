@@ -104,5 +104,19 @@ namespace AegisLiveBot.Web.Commands.Fun
             }
             ctx.Message.DeleteAfter(3);
         }
+        [Command("friday")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task Friday(CommandContext ctx)
+        {
+            try
+            {
+                await ctx.Channel.SendMessageAsync($"https://cdn.discordapp.com/attachments/268196447667617803/716023791985229844/friday.mov").ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                AegisLog.Log(e.Message, e);
+            }
+            ctx.Message.DeleteAfter(3);
+        }
     }
 }
