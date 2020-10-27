@@ -118,5 +118,19 @@ namespace AegisLiveBot.Web.Commands.Fun
             }
             ctx.Message.DeleteAfter(3);
         }
+        [Command("wednesday")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task Wednesday(CommandContext ctx)
+        {
+            try
+            {
+                await ctx.Channel.SendMessageAsync($"https://tenor.com/view/its-chinese-wednesday-funny-asian-chinese-kid-gif-16305229").ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                AegisLog.Log(e.Message, e);
+            }
+            ctx.Message.DeleteAfter(3);
+        }
     }
 }
