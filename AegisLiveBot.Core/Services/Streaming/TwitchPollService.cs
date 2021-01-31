@@ -212,17 +212,20 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
                             if (jsonType != null && jsonType.ToString() == "live")
                             {
-                                if(user.Roles.FirstOrDefault(x => x == role) == null)
+                                if (!liveUser.IsStreaming)
                                 {
+                                    uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, true);
+                                    await uow.SaveAsync().ConfigureAwait(false);
                                     await user.GrantRoleAsync(role);
-                                    if (serverSetting.TwitchAlertMode)
+                                    if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert)
                                     {
                                         var msg = $"@everyone streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
                                         var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
-                                        if(ch != null)
+                                        if (ch != null)
                                         {
                                             await ch.SendMessageAsync(msg).ConfigureAwait(false);
-                                        } else
+                                        }
+                                        else
                                         {
                                             AegisLog.Log($"Twitch alert channel not set!");
                                         }
@@ -232,6 +235,8 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
                             else
                             {
+                                uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, false);
+                                await uow.SaveAsync().ConfigureAwait(false);
                                 await user.RevokeRoleAsync(role);
                                 return false;
                             }

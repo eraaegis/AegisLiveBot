@@ -14,5 +14,7 @@ namespace AegisLiveBot.DAL.Repository
         void UpdateTwitchName(ulong guildId, ulong userId, string twitchName);
         void RemoveByGuildIdUserId(ulong guildId, ulong userId);
         bool TogglePriorityUser(ulong guildId, ulong userId);
+        bool ToggleAlertUser(ulong guildId, ulong userId);
+        bool SetStreaming(ulong guildId, ulong userId, bool isStreaming);
     }
 }

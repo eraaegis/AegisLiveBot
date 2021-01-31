@@ -54,5 +54,27 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             _dbset.Update(liveUser);
             return liveUser.PriorityUser;
         }
+        public bool ToggleAlertUser(ulong guildId, ulong userId)
+        {
+            var liveUser = GetByGuildIdUserId(guildId, userId);
+            if (liveUser == null)
+            {
+                throw new UserNotFoundException();
+            }
+            liveUser.TwitchAlert = !liveUser.TwitchAlert;
+            _dbset.Update(liveUser);
+            return liveUser.TwitchAlert;
+        }
+        public bool SetStreaming(ulong guildId, ulong userId, bool isStreaming)
+        {
+            var liveUser = GetByGuildIdUserId(guildId, userId);
+            if(liveUser == null)
+            {
+                throw new UserNotFoundException();
+            }
+            liveUser.IsStreaming = isStreaming;
+            _dbset.Update(liveUser);
+            return liveUser.IsStreaming;
+        }
     }
 }

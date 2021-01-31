@@ -2,14 +2,16 @@
 using AegisLiveBot.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AegisLiveBot.DAL.Migrations.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20210131061208_TwitchAlertUserSetting")]
+    partial class TwitchAlertUserSetting
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,9 +70,6 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsStreaming")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("PriorityUser")

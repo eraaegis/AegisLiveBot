@@ -190,5 +190,23 @@ namespace AegisLiveBot.Web.Commands
             }
             ctx.Message.DeleteAfter(3);
         }
+        [Command("togglealertuser")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task ToggleAlertUser(CommandContext ctx, DiscordUser user)
+        {
+            using (var uow = _db.UnitOfWork())
+            {
+                try
+                {
+                    var result = uow.LiveUsers.ToggleAlertUser(ctx.Guild.Id, user.Id);
+                    await uow.SaveAsync().ConfigureAwait(false);
+                    var msg = result ? "now" : "no longer";
+                    await ctx.Channel.SendMessageAsync($"Twitch live alert {msg} set for {user.Username}.").ConfigureAwait(false);
+                } catch(RepositoryException e)
+                {
+                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
+                }
+            }
+        }
     }
 }
