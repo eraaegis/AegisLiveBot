@@ -217,7 +217,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                                     await user.GrantRoleAsync(role);
                                     if (serverSetting.TwitchAlertMode)
                                     {
-                                        var msg = $"{guild.EveryoneRole.Mention} streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
+                                        var msg = $"@everyone streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
                                         var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
                                         if(ch != null)
                                         {
