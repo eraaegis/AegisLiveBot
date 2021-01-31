@@ -9,6 +9,7 @@ namespace AegisLiveBot.DAL.Models
         public ulong GuildId { get; set; }
         public ulong RoleId { get; set; }
         public ulong TwitchChannelId { get; set; }
+        public bool TwitchAlertMode { get; set; }
         public bool PriorityMode { get; set; }
         public ulong GamesCategory { get; set; }
     }

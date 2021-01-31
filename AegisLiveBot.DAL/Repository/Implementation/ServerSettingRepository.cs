@@ -31,6 +31,13 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             serverSetting.TwitchChannelId = chId;
             AddOrUpdate(serverSetting);
         }
+        public bool ToggleTwitchChannel(ulong guildId)
+        {
+            var serverSetting = GetOrAddByGuildId(guildId);
+            serverSetting.TwitchAlertMode = !serverSetting.TwitchAlertMode;
+            AddOrUpdate(serverSetting);
+            return serverSetting.TwitchAlertMode;
+        }
         public bool TogglePriorityMode(ulong guildId)
         {
             var serverSetting = GetOrAddByGuildId(guildId);

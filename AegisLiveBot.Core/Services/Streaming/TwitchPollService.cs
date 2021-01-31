@@ -43,8 +43,8 @@ namespace AegisLiveBot.Core.Services.Streaming
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
             _twitchPollTimer = new System.Timers.Timer();
-            _twitchPollTimer.Interval = 60000;
             _twitchPollTimer.Elapsed += PollTwitchStreams;
+            _twitchPollTimer.Interval = 60000;
             _twitchPollTimer.AutoReset = true;
             _twitchPollTimer.Start();
         }
@@ -145,100 +145,113 @@ namespace AegisLiveBot.Core.Services.Streaming
             try
             {
                 CancellationToken cancellationToken = default;
-                await hc.GetAsync($"https://api.twitch.tv/helix/streams?user_login={liveUser.TwitchName}", cancellationToken).ContinueWith(async responseTask =>
+                var response = await hc.GetAsync($"https://api.twitch.tv/helix/streams?user_login={liveUser.TwitchName}", cancellationToken).ConfigureAwait(false);
+                try
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     try
                     {
-                        var response = responseTask.Result;
-                        cancellationToken.ThrowIfCancellationRequested();
-
-                        try
-                        {
-                            response.EnsureSuccessStatusCode();
-                            var limit = int.Parse(response.Headers.FirstOrDefault(x => x.Key == "ratelimit-remaining").Value.ToList()[0]);
-                            if (limit <= 5)
-                            {
-                                await Task.Delay(5000).ConfigureAwait(false);
-                            }
-                        }
-                        catch
+                        response.EnsureSuccessStatusCode();
+                        var limit = int.Parse(response.Headers.FirstOrDefault(x => x.Key == "Ratelimit-Remaining").Value.ToList()[0]);
+                        if (limit <= 5)
                         {
                             await Task.Delay(5000).ConfigureAwait(false);
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        AegisLog.Log(ex.Message);
+                        await Task.Delay(5000).ConfigureAwait(false);
+                    }
 
-                        var responseError = "";
-                        try
+                    var responseError = "";
+                    try
+                    {
+                        var jsonString = await response.Content.ReadAsStringAsync();
+                        var jsonObject = JObject.Parse(jsonString);
+                        var jsonError = jsonObject["status"];
+                        if (jsonError != null)
                         {
-                            var jsonString = await response.Content.ReadAsStringAsync();
-                            var jsonObject = JObject.Parse(jsonString);
-                            var jsonError = jsonObject["status"];
-                            if (jsonError != null)
-                            {
-                                responseError = jsonObject["status"].ToString();
-                            }
-                            var jsonData = jsonObject["data"];
-                            JToken jsonType = null;
-                            if (jsonData.Count() != 0)
-                            {
-                                jsonType = jsonData[0]["type"];
-                            }
+                            responseError = jsonObject["status"].ToString();
+                        }
+                        var jsonData = jsonObject["data"];
+                        JToken jsonType = null;
+                        if (jsonData.Count() != 0)
+                        {
+                            jsonType = jsonData[0]["type"];
+                        }
 
-                            var guild = _client.Guilds.FirstOrDefault(x => x.Value.Id == liveUser.GuildId).Value;
-                            if (guild == null)
-                            {
-                                AegisLog.Log($"Server does not exist!");
-                                return false;
-                            }
-                            var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                            if (guild == null || user == null)
-                            {
-                                AegisLog.Log($"Server or User does not exist!");
-                                uow.LiveUsers.RemoveByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
-                                await uow.SaveAsync().ConfigureAwait(false);
-                                return false;
-                            }
-                            var serverSetting = uow.ServerSettings.GetOrAddByGuildId(liveUser.GuildId);
+                        var guild = _client.Guilds.FirstOrDefault(x => x.Value.Id == liveUser.GuildId).Value;
+                        if (guild == null)
+                        {
+                            AegisLog.Log($"Server does not exist!");
+                            return false;
+                        }
+                        var user = await guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
+                        if (guild == null || user == null)
+                        {
+                            AegisLog.Log($"Server or User does not exist!");
+                            uow.LiveUsers.RemoveByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
                             await uow.SaveAsync().ConfigureAwait(false);
-                            if (serverSetting == null || serverSetting.RoleId == 0)
+                            return false;
+                        }
+                        var serverSetting = uow.ServerSettings.GetOrAddByGuildId(liveUser.GuildId);
+                        await uow.SaveAsync().ConfigureAwait(false);
+                        if (serverSetting == null || serverSetting.RoleId == 0)
+                        {
+                            AegisLog.Log($"Streamer role not set!");
+                        }
+                        else
+                        {
+                            var role = guild.GetRole(serverSetting.RoleId);
+                            if (role == null)
                             {
-                                AegisLog.Log($"Streamer role not set!");
+                                AegisLog.Log($"Role does not exist!");
+                                return false;
+                            }
+                            if (jsonType != null && jsonType.ToString() == "live")
+                            {
+                                if(user.Roles.FirstOrDefault(x => x == role) == null)
+                                {
+                                    await user.GrantRoleAsync(role);
+                                    if (serverSetting.TwitchAlertMode)
+                                    {
+                                        var msg = $"{guild.EveryoneRole.Mention} streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
+                                        var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
+                                        if(ch != null)
+                                        {
+                                            await ch.SendMessageAsync(msg).ConfigureAwait(false);
+                                        } else
+                                        {
+                                            AegisLog.Log($"Twitch alert channel not set!");
+                                        }
+                                    }
+                                }
+                                return true;
                             }
                             else
                             {
-                                var role = guild.GetRole(serverSetting.RoleId);
-                                if (role == null)
-                                {
-                                    AegisLog.Log($"Role does not exist!");
-                                    return false;
-                                }
-                                if (jsonType != null && jsonType.ToString() == "live")
-                                {
-                                    await user.GrantRoleAsync(role);
-                                    return true;
-                                }
-                                else
-                                {
-                                    await user.RevokeRoleAsync(role);
-                                    return false;
-                                }
+                                await user.RevokeRoleAsync(role);
+                                return false;
                             }
-                            return false;
                         }
-                        catch (Exception e)
-                        {
-                            if (responseError == "401")
-                            {
-                                await GetNewToken().ConfigureAwait(false);
-                            }
-                            AegisLog.Log(e.Message, e);
-                        }
-
-                    } catch(Exception ex)
-                    {
-                        AegisLog.Log(ex.Message, ex);
+                        return false;
                     }
-                    return false;
-                });
+                    catch (Exception e)
+                    {
+                        if (responseError == "401")
+                        {
+                            await GetNewToken().ConfigureAwait(false);
+                        }
+                        AegisLog.Log(e.Message, e);
+                    }
+
+                } catch(Exception ex)
+                {
+                    AegisLog.Log(ex.Message, ex);
+                }
+                return false;
             } catch(Exception e)
             {
                 AegisLog.Log(e.Message, e);

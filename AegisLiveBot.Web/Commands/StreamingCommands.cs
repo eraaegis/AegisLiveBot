@@ -88,6 +88,19 @@ namespace AegisLiveBot.Web.Commands
             }
             ctx.Message.DeleteAfter(3);
         }
+        [Command("toggletwitchchannel")]
+        [RequireUserPermissions(Permissions.ManageRoles)]
+        public async Task ToggleTwitchChannel(CommandContext ctx)
+        {
+            using (var uow = _db.UnitOfWork())
+            {
+                var result = uow.ServerSettings.ToggleTwitchChannel(ctx.Guild.Id);
+                await uow.SaveAsync().ConfigureAwait(false);
+                var msg = result ? "on" : "off";
+                await ctx.Channel.SendMessageAsync($"Streams alert is now {msg}.");
+            }
+            ctx.Message.DeleteAfter(3);
+        }
         [Command("toggleprioritymode")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task TogglePriorityMode(CommandContext ctx)
