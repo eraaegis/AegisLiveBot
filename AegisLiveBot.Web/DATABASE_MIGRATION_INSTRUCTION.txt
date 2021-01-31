@@ -1,0 +1,3 @@
+dotnet-ef migrations add <NAME> -p ../AegisLiveBot.DAL.Migrations/AegisLiveBot.DAL.Migrations.csproj --context AegisLiveBot.DAL.Context
+
+dotnet-ef database update -p ../AegisLiveBot.DAL.Migrations/AegisLiveBot.DAL.Migrations.csproj --context AegisLiveBot.DAL.Context
