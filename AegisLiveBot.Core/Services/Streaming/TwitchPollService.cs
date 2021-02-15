@@ -212,6 +212,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
                             if (jsonType != null && jsonType.ToString() == "live")
                             {
+                                liveUser = uow.LiveUsers.GetByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
                                 if (!liveUser.IsStreaming)
                                 {
                                     uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, true);
