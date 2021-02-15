@@ -225,15 +225,6 @@ namespace AegisLiveBot.Core.Services.Streaming
                                         if (ch != null)
                                         {
                                             var channelMessage = await ch.SendMessageAsync(msg).ConfigureAwait(false);
-                                            var emojis = await guild.GetEmojisAsync().ConfigureAwait(false);
-                                            var emojisArray = emojis.ToList();
-                                            var reactions = Math.Min(AegisRandom.RandomNumber(7, 11), emojis.Count);
-                                            for(var i = 0; i < reactions; ++i)
-                                            {
-                                                var random = AegisRandom.RandomNumber(0, emojisArray.Count);
-                                                await channelMessage.CreateReactionAsync(emojisArray[random]).ConfigureAwait(false);
-                                                emojisArray.RemoveAt(random);
-                                            }
                                         }
                                         else
                                         {
