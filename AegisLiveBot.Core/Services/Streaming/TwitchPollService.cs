@@ -32,6 +32,8 @@ namespace AegisLiveBot.Core.Services.Streaming
         private string AccessToken = "";
         private bool IsPolling = false;
 
+        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+
         private readonly System.Timers.Timer _accessTokenTimer;
         public TwitchPollService(DbService db, DiscordClient client, ConfigJson configJson)
         {
@@ -212,33 +214,57 @@ namespace AegisLiveBot.Core.Services.Streaming
                             }
                             if (jsonType != null && jsonType.ToString() == "live")
                             {
-                                liveUser = uow.LiveUsers.GetByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
-                                if (!liveUser.IsStreaming)
+                                await semaphoreSlim.WaitAsync();
+                                try
                                 {
-                                    uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, true);
-                                    await uow.SaveAsync().ConfigureAwait(false);
-                                    await user.GrantRoleAsync(role);
-                                    if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert)
+                                    liveUser = uow.LiveUsers.GetByGuildIdUserId(liveUser.GuildId, liveUser.UserId);
+                                    if (!liveUser.IsStreaming)
                                     {
-                                        var msg = $"@everyone streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
-                                        var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
-                                        if (ch != null)
+                                        uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, true);
+                                        await uow.SaveAsync().ConfigureAwait(false);
+                                        await user.GrantRoleAsync(role);
+                                        if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert)
                                         {
-                                            var channelMessage = await ch.SendMessageAsync(msg).ConfigureAwait(false);
-                                        }
-                                        else
-                                        {
-                                            AegisLog.Log($"Twitch alert channel not set!");
+                                            var msg = $"@everyone streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
+                                            var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
+                                            if (ch != null)
+                                            {
+                                                var channelMessage = await ch.SendMessageAsync(msg).ConfigureAwait(false);
+                                            }
+                                            else
+                                            {
+                                                AegisLog.Log($"Twitch alert channel not set!");
+                                            }
                                         }
                                     }
+                                }
+                                catch (Exception ex)
+                                {
+                                    AegisLog.Log(ex.Message);
+                                }
+                                finally
+                                {
+                                    semaphoreSlim.Release();
                                 }
                                 return true;
                             }
                             else
                             {
-                                uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, false);
-                                await uow.SaveAsync().ConfigureAwait(false);
-                                await user.RevokeRoleAsync(role);
+                                await semaphoreSlim.WaitAsync();
+                                try
+                                {
+                                    uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, false);
+                                    await uow.SaveAsync().ConfigureAwait(false);
+                                    await user.RevokeRoleAsync(role);
+                                }
+                                catch (Exception ex)
+                                {
+                                    AegisLog.Log(ex.Message);
+                                }
+                                finally
+                                {
+                                    semaphoreSlim.Release();
+                                }
                                 return false;
                             }
                         }
