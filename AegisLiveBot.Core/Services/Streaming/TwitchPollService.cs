@@ -42,12 +42,12 @@ namespace AegisLiveBot.Core.Services.Streaming
             _client = client;
             TwitchClientId = configJson.TwitchClientId;
             TwitchClientSecret = configJson.TwitchClientSecret;
-            _accessTokenTimer = new System.Timers.Timer(3000);
+            _accessTokenTimer = new System.Timers.Timer(60000);
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
             _twitchPollTimer = new System.Timers.Timer();
             _twitchPollTimer.Elapsed += PollTwitchStreams;
-            _twitchPollTimer.Interval = 3000;
+            _twitchPollTimer.Interval = 60000;
             _twitchPollTimer.AutoReset = true;
             _twitchPollTimer.Start();
         }
