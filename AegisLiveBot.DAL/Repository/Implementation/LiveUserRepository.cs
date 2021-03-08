@@ -76,5 +76,15 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             _dbset.Update(liveUser);
             return liveUser.IsStreaming;
         }
+        public void SetLastStreamed(ulong guildId, ulong userId)
+        {
+            var liveUser = GetByGuildIdUserId(guildId, userId);
+            if(liveUser == null)
+            {
+                throw new UserNotFoundException();
+            }
+            liveUser.LastStreamed = DateTime.UtcNow;
+            _dbset.Update(liveUser);
+        }
     }
 }

@@ -31,6 +31,7 @@ namespace AegisLiveBot.Core.Services.Streaming
         private string TwitchClientSecret = "";
         private string AccessToken = "";
         private bool IsPolling = false;
+        private const int STREAM_ALERT_COOLDOWN_HOUR = 1;
 
         private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
@@ -41,12 +42,12 @@ namespace AegisLiveBot.Core.Services.Streaming
             _client = client;
             TwitchClientId = configJson.TwitchClientId;
             TwitchClientSecret = configJson.TwitchClientSecret;
-            _accessTokenTimer = new System.Timers.Timer(60000);
+            _accessTokenTimer = new System.Timers.Timer(3000);
             _accessTokenTimer.Elapsed += OnTimedEvent;
             _accessTokenTimer.Enabled = false;
             _twitchPollTimer = new System.Timers.Timer();
             _twitchPollTimer.Elapsed += PollTwitchStreams;
-            _twitchPollTimer.Interval = 60000;
+            _twitchPollTimer.Interval = 3000;
             _twitchPollTimer.AutoReset = true;
             _twitchPollTimer.Start();
         }
@@ -223,8 +224,11 @@ namespace AegisLiveBot.Core.Services.Streaming
                                         uow.LiveUsers.SetStreaming(liveUser.GuildId, liveUser.UserId, true);
                                         await uow.SaveAsync().ConfigureAwait(false);
                                         await user.GrantRoleAsync(role);
-                                        if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert)
+                                        if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert && DateTime.UtcNow.AddHours(-STREAM_ALERT_COOLDOWN_HOUR) > liveUser.LastStreamed)
                                         {
+                                            uow = _db.UnitOfWork();
+                                            uow.LiveUsers.SetLastStreamed(liveUser.GuildId, liveUser.UserId);
+                                            await uow.SaveAsync().ConfigureAwait(false);
                                             var msg = $"@everyone streamer live yo https://www.twitch.tv/{liveUser.TwitchName}";
                                             var ch = guild.Channels.FirstOrDefault(x => x.Value.Id == serverSetting.TwitchChannelId).Value;
                                             if (ch != null)

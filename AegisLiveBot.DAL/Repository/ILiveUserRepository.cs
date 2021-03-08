@@ -16,5 +16,6 @@ namespace AegisLiveBot.DAL.Repository
         bool TogglePriorityUser(ulong guildId, ulong userId);
         bool ToggleAlertUser(ulong guildId, ulong userId);
         bool SetStreaming(ulong guildId, ulong userId, bool isStreaming);
+        void SetLastStreamed(ulong guildId, ulong userId);
     }
 }

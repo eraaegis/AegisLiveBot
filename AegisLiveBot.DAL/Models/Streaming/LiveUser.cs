@@ -12,5 +12,6 @@ namespace AegisLiveBot.DAL.Models.Streaming
         public bool PriorityUser { get; set; }
         public bool TwitchAlert { get; set; }
         public bool IsStreaming { get; set; }
+        public DateTime LastStreamed { get; set; }
     }
 }
