@@ -233,11 +233,12 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                             }
                             else
                             {
-                                CustomReplies.Add(customReply);
-
                                 var uow = _db.UnitOfWork();
-                                uow.CustomReplies.AddByGuildId(channel.GuildId, customReply);
+                                var customReplyDb = uow.CustomReplies.AddByGuildId(channel.GuildId, customReply);
                                 await uow.SaveAsync().ConfigureAwait(false);
+
+                                customReply.Id = customReplyDb.Id;
+                                CustomReplies.Add(customReply);
                             }
 
                             await channel.SendMessageAsync(CustomReplyHelper.ToString(customReply)).ConfigureAwait(false);

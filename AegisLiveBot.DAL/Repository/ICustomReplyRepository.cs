@@ -11,7 +11,8 @@ namespace AegisLiveBot.DAL.Repository
 
         IEnumerable<CustomReplyDb> GetAllByGuildId(ulong guildId);
 
-        void AddByGuildId(ulong guildId, CustomReply customReply);
+        // return the DB object inserted
+        CustomReplyDb AddByGuildId(ulong guildId, CustomReply customReply);
 
         void UpdateByGuildId(ulong guildId, CustomReply customReply);
 
