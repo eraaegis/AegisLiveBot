@@ -14,5 +14,6 @@ namespace AegisLiveBot.DAL.Repository
         bool ToggleTwitchChannel(ulong guildId);
         bool TogglePriorityMode(ulong guildId);
         void SetGamesCategory(ulong guildId, ulong catId);
+        bool ToggleCustomReply(ulong guildId);
     }
 }

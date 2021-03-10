@@ -51,5 +51,12 @@ namespace AegisLiveBot.DAL.Repository.Implementation
             serverSetting.GamesCategory = catId;
             AddOrUpdate(serverSetting);
         }
+        public bool ToggleCustomReply(ulong guildId)
+        {
+            var serverSetting = GetOrAddByGuildId(guildId);
+            serverSetting.CustomReplyMode = !serverSetting.CustomReplyMode;
+            AddOrUpdate(serverSetting);
+            return serverSetting.CustomReplyMode;
+        }
     }
 }
