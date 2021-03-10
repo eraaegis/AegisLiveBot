@@ -396,11 +396,13 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             helpMsg += "add\n";
             helpMsg += "-- Add a new custom reply\n\n";
             helpMsg += "edit <number>\n";
-            helpMsg += "-- Edies the specified custom reply\n";
+            helpMsg += "-- Edits the specified custom reply\n";
             helpMsg += "-- For example: edit 1\n\n";
             helpMsg += "remove <number>\n";
             helpMsg += "-- Removes the specified custom reply\n";
             helpMsg += "-- For example: remove 1\n\n";
+            helpMsg += "togglecustomreply\n";
+            helpMsg += "-- Toggles custom reply mode on and off for this server\n\n";
             helpMsg += "===========================================\n";
             helpMsg += "Use the following commands to navigate the editor:\n";
             helpMsg += "help - display this message\n";
@@ -408,6 +410,9 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             helpMsg += "quit - quit editor\n";
             helpMsg += "```";
             await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
+
+            var warningMsg = "```WARNING: CUSTOM REPLY MODE IS CURRENTLY OFF FOR THIS SERVER\n";
+            warningMsg += "USE THE COMMAND 'togglecustomreply' TO TURN ON CUSTOM REPLY```";
 
             var serverCustomReplies = CustomReplies.Where(x => x.GuildId == channel.GuildId).ToList();
             var currentPage = 1;
@@ -421,6 +426,13 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     viewPage = false;
                     var viewString = BuildPreviewPage(currentPage, maxPage, serverCustomReplies);
                     await channel.SendMessageAsync(viewString).ConfigureAwait(false);
+
+                    var uow = _db.UnitOfWork();
+                    var serverSettings = uow.ServerSettings.GetOrAddByGuildId(channel.GuildId);
+                    if (!serverSettings.CustomReplyMode)
+                    {
+                        await channel.SendMessageAsync(warningMsg).ConfigureAwait(false);
+                    }
                 }
 
                 var response = await interactivity.WaitForMessageAsync(x => x.ChannelId == channel.Id && x.Author.Id == userId).ConfigureAwait(false);
@@ -488,6 +500,14 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     }
                     serverCustomReplies = CustomReplies.Where(x => x.GuildId == channel.GuildId).ToList();
                     await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
+                }
+                else if (command == "togglecustomreply")
+                {
+                    var uow = _db.UnitOfWork();
+                    var customReplyMode = uow.ServerSettings.ToggleCustomReply(channel.GuildId);
+                    await uow.SaveAsync().ConfigureAwait(false);
+                    var toggleMsg = customReplyMode ? "on" : "off";
+                    await channel.SendMessageAsync($"Custom reply mode is now {toggleMsg} for this server").ConfigureAwait(false);
                 }
                 else
                 {
