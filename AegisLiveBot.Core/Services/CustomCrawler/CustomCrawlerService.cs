@@ -56,9 +56,8 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     continue;
                 }
 
-                var words = response.Result.Content.Split(' ').Select(x => x.ToLower()).ToList();
                 var customReplies = CustomReplies.Where(x => x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId) && DateTime.UtcNow.AddMinutes(-x.Cooldown) > x.LastTriggered
-                    && x.Triggers.Any(y => y.All(z => words.Contains(z))));
+                    && x.Triggers.Any(y => y.All(z => response.Result.Content.IndexOf(z) >= 0)));
 
                 if(customReplies == null || customReplies.Count() == 0)
                 {
