@@ -56,8 +56,10 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     continue;
                 }
 
-                var customReplies = CustomReplies.Where(x => x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId) && DateTime.UtcNow.AddMinutes(-x.Cooldown) > x.LastTriggered
-                    && x.Triggers.Any(y => y.All(z => response.Result.Content.IndexOf(z) >= 0)));
+                var customReplies = CustomReplies.Where(x => x.GuildId == response.Result.Channel.GuildId // same server
+                    && (x.Channels.Count == 0 || x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId)) // no channels selected, or selected channels only
+                    && DateTime.UtcNow.AddMinutes(-x.Cooldown) > x.LastTriggered // cooldown
+                    && x.Triggers.Any(y => y.All(z => response.Result.Content.IndexOf(z) >= 0))); // any triggers hit
 
                 if(customReplies == null || customReplies.Count() == 0)
                 {
@@ -145,6 +147,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                 Channels = new List<DiscordChannel>(),
                 Cooldown = 5
             };
+
             var helpMsg = "```Use the following commands(without prefix) to edit a new custom reply:\n";
             helpMsg += "setmessage <message>\n";
             helpMsg += "-- For example: setmessage Crit Fiora sucks\n\n";
@@ -173,6 +176,10 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             helpMsg += "back - return to menu\n";
             helpMsg += "quit - quit editor without saving\n";
             helpMsg += "```";
+
+            var noChannelWarningMsg = "```WARNING: NO CHANNELS ADDED, CUSTOM REPLY WILL TRIGGER IN ALL CHANNELS\n";
+            noChannelWarningMsg += "TO CONFIGURE THE CUSTOM REPLY TO TRIGGER IN SPECIFIC CHANNELS, USE 'addchannel <channels>'```";
+
             await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
 
             while (true)
@@ -208,49 +215,68 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     {
                         await channel.SendMessageAsync($"Custom reply message cannot be empty. Use 'setmessage <message>' to set a message.").ConfigureAwait(false);
                     }
-                    else if (customReply.Channels.Count == 0)
-                    {
-                        await channel.SendMessageAsync($"Add at least one channel for the custom reply to trigger in. Use 'addchannel <channels>' to add channels.").ConfigureAwait(false);
-                    }
                     else if (customReply.Triggers.Count == 0)
                     {
                         await channel.SendMessageAsync($"Add at least one trigger for the custom reply. Use 'addtrigger <trigger words>' to add triggers.").ConfigureAwait(false);
                     }
                     else
                     {
-                        await semaphoreSlim.WaitAsync();
-                        try
+                        if (customReply.Channels.Count == 0)
                         {
-                            if (editMode)
+                            await channel.SendMessageAsync(noChannelWarningMsg).ConfigureAwait(false);
+                        }
+
+                        await channel.SendMessageAsync(CustomReplyHelper.ToString(customReply)).ConfigureAwait(false);
+                        await channel.SendMessageAsync($"Confirm custom reply by typing 'confirm', anything else will cancel this request.").ConfigureAwait(false);
+
+                        response = await interactivity.WaitForMessageAsync(x => x.ChannelId == channel.Id && x.Author.Id == userId).ConfigureAwait(false);
+                        if (response.TimedOut)
+                        {
+                            await channel.SendMessageAsync("Inactivity: editor will now exit.").ConfigureAwait(false);
+                            return true;
+                        }
+
+                        if (response.Result.Content.ToLower() == "confirm")
+                        {
+                            await semaphoreSlim.WaitAsync();
+                            try
                             {
-                                CustomReplies[CustomReplies.FindIndex(x => x.Id == customReply.Id)] = customReply;
+                                if (editMode)
+                                {
+                                    CustomReplies[CustomReplies.FindIndex(x => x.Id == customReply.Id)] = customReply;
 
-                                var uow = _db.UnitOfWork();
-                                uow.CustomReplies.UpdateByGuildId(channel.GuildId, customReply);
-                                await uow.SaveAsync().ConfigureAwait(false);
+                                    var uow = _db.UnitOfWork();
+                                    uow.CustomReplies.UpdateByGuildId(channel.GuildId, customReply);
+                                    await uow.SaveAsync().ConfigureAwait(false);
 
+                                }
+                                else
+                                {
+                                    var uow = _db.UnitOfWork();
+                                    var customReplyDb = uow.CustomReplies.AddByGuildId(channel.GuildId, customReply);
+                                    await uow.SaveAsync().ConfigureAwait(false);
+
+                                    customReply.Id = customReplyDb.Id;
+                                    CustomReplies.Add(customReply);
+                                }
+
+                                await channel.SendMessageAsync("Custom reply successfully saved.").ConfigureAwait(false);
                             }
-                            else
+                            catch (Exception e)
                             {
-                                var uow = _db.UnitOfWork();
-                                var customReplyDb = uow.CustomReplies.AddByGuildId(channel.GuildId, customReply);
-                                await uow.SaveAsync().ConfigureAwait(false);
-
-                                customReply.Id = customReplyDb.Id;
-                                CustomReplies.Add(customReply);
+                                throw;
                             }
+                            finally
+                            {
+                                semaphoreSlim.Release();
+                            }
+                        }
+                        else
+                        {
+                            await channel.SendMessageAsync("Save request cancelled.").ConfigureAwait(false);
+                            continue;
+                        }
 
-                            await channel.SendMessageAsync(CustomReplyHelper.ToString(customReply)).ConfigureAwait(false);
-                            await channel.SendMessageAsync("Custom reply successfully added.").ConfigureAwait(false);
-                        }
-                        catch (Exception e)
-                        {
-                            throw;
-                        }
-                        finally
-                        {
-                            semaphoreSlim.Release();
-                        }
                         return false;
                     }
                 }
@@ -605,6 +631,8 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                     var uow = _db.UnitOfWork();
                                     uow.CustomReplies.RemoveById(customReplyToDelete.Id);
                                     await uow.SaveAsync().ConfigureAwait(false);
+
+                                    await channel.SendMessageAsync("Custom reply deleted.").ConfigureAwait(false);
                                 }
                                 catch (Exception e)
                                 {
@@ -615,7 +643,6 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                     semaphoreSlim.Release();
                                 }
 
-                                await channel.SendMessageAsync("Custom reply deleted.").ConfigureAwait(false);
                             }
                             else
                             {
