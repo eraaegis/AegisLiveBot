@@ -178,7 +178,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             helpMsg += "```";
 
             var noChannelWarningMsg = "```WARNING: NO CHANNELS ADDED, CUSTOM REPLY WILL TRIGGER IN ALL CHANNELS\n";
-            noChannelWarningMsg += "TO CONFIGURE THE CUSTOM REPLY TO TRIGGER IN SPECIFIC CHANNELS, USE 'addchannel <channels>'```";
+            noChannelWarningMsg += "TO CONFIGURE THE CUSTOM REPLY TO TRIGGER IN SPECIFIC CHANNELS, USE 'addchannel <channels>'```\n";
 
             await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
 
@@ -221,13 +221,13 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     }
                     else
                     {
+                        var msg = CustomReplyHelper.ToString(customReply) + $"Confirm custom reply by typing 'confirm', anything else will cancel this request.";
                         if (customReply.Channels.Count == 0)
                         {
-                            await channel.SendMessageAsync(noChannelWarningMsg).ConfigureAwait(false);
+                            msg = noChannelWarningMsg + msg;
                         }
 
-                        await channel.SendMessageAsync(CustomReplyHelper.ToString(customReply)).ConfigureAwait(false);
-                        await channel.SendMessageAsync($"Confirm custom reply by typing 'confirm', anything else will cancel this request.").ConfigureAwait(false);
+                        await channel.SendMessageAsync(msg).ConfigureAwait(false);
 
                         response = await interactivity.WaitForMessageAsync(x => x.ChannelId == channel.Id && x.Author.Id == userId).ConfigureAwait(false);
                         if (response.TimedOut)
@@ -450,14 +450,17 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                 {
                     viewPage = false;
                     var viewString = BuildPreviewPage(currentPage, maxPage, serverCustomReplies);
-                    await channel.SendMessageAsync(viewString).ConfigureAwait(false);
+
+                    var msg = viewString;
 
                     var uow = _db.UnitOfWork();
                     var serverSettings = uow.ServerSettings.GetOrAddByGuildId(channel.GuildId);
                     if (!serverSettings.CustomReplyMode)
                     {
-                        await channel.SendMessageAsync(warningMsg).ConfigureAwait(false);
+                        msg += warningMsg;
                     }
+
+                    await channel.SendMessageAsync(msg).ConfigureAwait(false);
                 }
 
                 var response = await interactivity.WaitForMessageAsync(x => x.ChannelId == channel.Id && x.Author.Id == userId).ConfigureAwait(false);
