@@ -84,7 +84,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             {
                 try
                 {
-                    var channels = customReplyDb.ChannelIds.Split(',').Select(x => ulong.Parse(x.Trim())).Distinct().Select(x => _client.GetChannelAsync(x).Result).ToList();
+                    var channels = string.IsNullOrEmpty(customReplyDb.ChannelIds) ? new List<DiscordChannel>() : customReplyDb.ChannelIds.Split(',').Select(x => ulong.Parse(x.Trim())).Distinct().Select(x => _client.GetChannelAsync(x).Result).ToList();
                     var triggers = customReplyDb.Triggers.Split(';').Select(x => x.Split(',').Select(y => y.ToLower()).ToList()).ToList();
                     var customReply = new CustomReply
                     {
@@ -178,7 +178,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             helpMsg += "```";
 
             var noChannelWarningMsg = "```WARNING: NO CHANNELS ADDED, CUSTOM REPLY WILL TRIGGER IN ALL CHANNELS\n";
-            noChannelWarningMsg += "TO CONFIGURE THE CUSTOM REPLY TO TRIGGER IN SPECIFIC CHANNELS, USE 'addchannel <channels>'```\n";
+            noChannelWarningMsg += "TO CONFIGURE THE CUSTOM REPLY TO TRIGGER IN SPECIFIC CHANNELS, USE 'addchannel <channels>'```";
 
             await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
 
