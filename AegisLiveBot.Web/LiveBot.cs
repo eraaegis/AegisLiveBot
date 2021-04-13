@@ -17,6 +17,7 @@ using AegisLiveBot.Core.Services.Streaming;
 using AegisLiveBot.Web.Commands.Fun;
 using DSharpPlus.Interactivity;
 using AegisLiveBot.Web.Commands;
+using AegisLiveBot.Core.Services.CustomCrawler;
 
 namespace AegisLiveBot.Web
 {
@@ -62,6 +63,7 @@ namespace AegisLiveBot.Web
             services.AddSingleton(_configJson);
 
             services.AddSingleton<ITwitchPollService, TwitchPollService>();
+            services.AddSingleton<ICustomCrawlerService, CustomCrawlerService>();
 
             _serviceProvider = services.BuildServiceProvider();
 
@@ -81,6 +83,7 @@ namespace AegisLiveBot.Web
             Commands.RegisterCommands<RoastCommands>();
             Commands.RegisterCommands<GamesCommands>();
             Commands.RegisterCommands<SearchCommands>();
+            Commands.RegisterCommands<CustomReplyCommands>();
 
             Client.ConnectAsync();
 
@@ -94,8 +97,10 @@ namespace AegisLiveBot.Web
 
         private void SetUpServices()
         {
-            var service = _serviceProvider.GetService<ITwitchPollService>();
-            _services.TryAdd(typeof(ITwitchPollService), service);
+            var twitchPollService = _serviceProvider.GetService<ITwitchPollService>();
+            _services.TryAdd(typeof(ITwitchPollService), twitchPollService);
+            var customCrawlerService = _serviceProvider.GetService<ICustomCrawlerService>();
+            _services.TryAdd(typeof(ICustomCrawlerService), customCrawlerService);
         }
     }
 }

@@ -10,12 +10,18 @@ namespace AegisLiveBot.DAL
     public class UnitOfWork : IUnitOfWork
     {
         public Context _context { get; }
+
         private IServerSettingRepository _serverSettings;
         public IServerSettingRepository ServerSettings => _serverSettings ?? (_serverSettings = new ServerSettingRepository(_context));
+
         private ILiveUserRepository _liveUsers;
         public ILiveUserRepository LiveUsers => _liveUsers ?? (_liveUsers = new LiveUserRepository(_context));
+
         private IRoastMsgRepository _roastMsgs;
         public IRoastMsgRepository RoastMsgs => _roastMsgs ?? (_roastMsgs = new RoastMsgRepository(_context));
+
+        private ICustomReplyRepository _customReplies;
+        public ICustomReplyRepository CustomReplies => _customReplies ?? (_customReplies = new CustomReplyRepository(_context));
 
         public UnitOfWork(Context context)
         {

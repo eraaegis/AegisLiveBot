@@ -12,5 +12,6 @@ namespace AegisLiveBot.DAL.Models
         public bool TwitchAlertMode { get; set; }
         public bool PriorityMode { get; set; }
         public ulong GamesCategory { get; set; }
+        public bool CustomReplyMode { get; set; }
     }
 }

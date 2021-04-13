@@ -1,4 +1,5 @@
 ﻿using AegisLiveBot.DAL.Models;
+using AegisLiveBot.DAL.Models.CustomCrawler;
 using AegisLiveBot.DAL.Models.Fun;
 using AegisLiveBot.DAL.Models.Streaming;
 using Microsoft.Data.Sqlite;
@@ -18,5 +19,6 @@ namespace AegisLiveBot.DAL
         public DbSet<ServerSetting> ServerSettings { get; set; }
         public DbSet<LiveUser> LiveUsers { get; set; }
         public DbSet<RoastMsg> RoastMsgs { get; set; }
+        public DbSet<CustomReplyDb> CustomReplies { get; set; }
     }
 }

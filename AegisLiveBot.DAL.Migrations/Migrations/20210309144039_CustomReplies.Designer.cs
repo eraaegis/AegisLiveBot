@@ -3,44 +3,20 @@ using System;
 using AegisLiveBot.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AegisLiveBot.DAL.Migrations.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20210309144039_CustomReplies")]
+    partial class CustomReplies
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "3.1.3");
-
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.CustomCrawler.CustomReplyDb", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ChannelIds")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Cooldown")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Triggers")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CustomReplies");
-                });
 
             modelBuilder.Entity("AegisLiveBot.DAL.Models.Fun.RoastMsg", b =>
                 {
@@ -63,9 +39,6 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("CustomReplyMode")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("GamesCategory")

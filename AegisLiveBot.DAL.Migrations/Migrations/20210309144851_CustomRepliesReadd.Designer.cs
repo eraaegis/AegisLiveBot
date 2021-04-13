@@ -3,20 +3,22 @@ using System;
 using AegisLiveBot.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AegisLiveBot.DAL.Migrations.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20210309144851_CustomRepliesReadd")]
+    partial class CustomRepliesReadd
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "3.1.3");
 
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.CustomCrawler.CustomReplyDb", b =>
+            modelBuilder.Entity("AegisLiveBot.DAL.Models.CustomCrawler.CustomReply", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -63,9 +65,6 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("CustomReplyMode")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("GamesCategory")
