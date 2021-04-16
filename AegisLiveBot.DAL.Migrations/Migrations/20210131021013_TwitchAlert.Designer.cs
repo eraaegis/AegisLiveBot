@@ -63,7 +63,7 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                     b.ToTable("ServerSettings");
                 });
 
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.Streaming.LiveUser", b =>
+            modelBuilder.Entity("AegisLiveBot.DAL.Models.Streaming.LiveUserDb", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

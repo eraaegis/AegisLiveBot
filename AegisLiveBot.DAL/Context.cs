@@ -17,7 +17,7 @@ namespace AegisLiveBot.DAL
         public Context(DbContextOptions<Context> options) : base(options) { }
 
         public DbSet<ServerSetting> ServerSettings { get; set; }
-        public DbSet<LiveUser> LiveUsers { get; set; }
+        public DbSet<LiveUserDb> LiveUsers { get; set; }
         public DbSet<RoastMsg> RoastMsgs { get; set; }
         public DbSet<CustomReplyDb> CustomReplies { get; set; }
     }

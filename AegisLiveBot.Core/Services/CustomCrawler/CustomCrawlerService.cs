@@ -22,11 +22,9 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
         private readonly DbService _db;
         private readonly DiscordClient _client;
 
-        private List<CustomReply> CustomReplies;
+        private List<IGrouping<ulong, CustomReply>> CustomReplies;
 
         private List<ulong> ActiveEditorsInChannels = new List<ulong>();
-
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
         public CustomCrawlerService(DbService db, DiscordClient client)
         {
@@ -56,8 +54,15 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     continue;
                 }
 
-                var customReplies = CustomReplies.Where(x => x.GuildId == response.Result.Channel.GuildId // same server
-                    && (x.Channels.Count == 0 || x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId)) // no channels selected, or selected channels only
+                // if key does not exist
+                var customRepliesByGroup = CustomReplies.FirstOrDefault(x => x.Key == response.Result.Channel.GuildId);
+                if (customRepliesByGroup == null)
+                {
+                    continue;
+                }
+
+                var customReplies = customRepliesByGroup.Where(x => 
+                    (x.Channels.Count == 0 || x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId)) // no channels selected, or selected channels only
                     && DateTime.UtcNow.AddMinutes(-x.Cooldown) > x.LastTriggered // cooldown
                     && x.Triggers.Any(y => y.All(z => response.Result.Content.IndexOf(z) >= 0))); // any triggers hit
 
@@ -74,13 +79,13 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
 
         private void SetUpCustomReplies()
         {
-            CustomReplies = new List<CustomReply>();
+            var customReplies = new List<CustomReply>();
 
             var uow = _db.UnitOfWork();
 
-            var customReplies = uow.CustomReplies.GetAll();
+            var customRepliesDb = uow.CustomReplies.GetAll();
 
-            foreach(var customReplyDb in customReplies)
+            foreach (var customReplyDb in customRepliesDb)
             {
                 try
                 {
@@ -95,13 +100,15 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         Triggers = triggers,
                         Cooldown = customReplyDb.Cooldown
                     };
-                    CustomReplies.Add(customReply);
+                    customReplies.Add(customReply);
                 }
                 catch (Exception e)
                 {
                     AegisLog.Log($"Error adding customReply: {JsonConvert.SerializeObject(customReplyDb)}", e);
                 }
             }
+
+            CustomReplies = customReplies.GroupBy(x => x.GuildId).ToList();
         }
 
         public void SetUpCustomReplyEditor(DiscordChannel channel, ulong userId)
@@ -238,17 +245,22 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
 
                         if (response.Result.Content.ToLower() == "confirm")
                         {
-                            await semaphoreSlim.WaitAsync();
                             try
                             {
                                 if (editMode)
                                 {
-                                    CustomReplies[CustomReplies.FindIndex(x => x.Id == customReply.Id)] = customReply;
+                                    var customReplyGroup = CustomReplies.FirstOrDefault(x => x.Key == customReply.GuildId);
+
+                                    var oldCustomReply = customReplyGroup.FirstOrDefault(x => x.Id == customReply.Id);
+                                    oldCustomReply.Channels = customReply.Channels;
+                                    oldCustomReply.Message = customReply.Message;
+                                    oldCustomReply.Triggers = customReply.Triggers;
+                                    oldCustomReply.Cooldown = customReply.Cooldown;
+                                    oldCustomReply.LastTriggered = DateTime.MinValue;
 
                                     var uow = _db.UnitOfWork();
                                     uow.CustomReplies.UpdateByGuildId(channel.GuildId, customReply);
                                     await uow.SaveAsync().ConfigureAwait(false);
-
                                 }
                                 else
                                 {
@@ -257,7 +269,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                     await uow.SaveAsync().ConfigureAwait(false);
 
                                     customReply.Id = customReplyDb.Id;
-                                    CustomReplies.Add(customReply);
+                                    CustomReplies.FirstOrDefault(x => x.Key == customReply.GuildId).Append(customReply);
                                 }
 
                                 await channel.SendMessageAsync("Custom reply successfully saved.").ConfigureAwait(false);
@@ -265,10 +277,6 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                             catch (Exception e)
                             {
                                 throw;
-                            }
-                            finally
-                            {
-                                semaphoreSlim.Release();
                             }
                         }
                         else
@@ -439,7 +447,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             var warningMsg = "```WARNING: CUSTOM REPLY MODE IS CURRENTLY OFF FOR THIS SERVER\n";
             warningMsg += "USE THE COMMAND 'togglecustomreply' TO TURN ON CUSTOM REPLY```";
 
-            var serverCustomReplies = CustomReplies.Where(x => x.GuildId == channel.GuildId).ToList();
+            var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
             var currentPage = 1;
             var maxPage = (serverCustomReplies.Count / 10) + 1;
             var viewPage = true;
@@ -526,7 +534,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     {
                         break;
                     }
-                    serverCustomReplies = CustomReplies.Where(x => x.GuildId == channel.GuildId).ToList();
+                    serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
                     await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
                 }
                 else if (command == "togglecustomreply")
@@ -594,7 +602,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                             {
                                 break;
                             }
-                            serverCustomReplies = CustomReplies.Where(x => x.GuildId == channel.GuildId).ToList();
+                            serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
                             await channel.SendMessageAsync(helpMsg).ConfigureAwait(false);
                         }
                     }
@@ -625,11 +633,11 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
 
                             if (response.Result.Content.ToLower() == "confirm")
                             {
-                                await semaphoreSlim.WaitAsync();
                                 try
                                 {
                                     serverCustomReplies.Remove(customReplyToDelete);
-                                    CustomReplies.Remove(customReplyToDelete);
+                                    CustomReplies.RemoveAll(x => x.Key == customReplyToDelete.GuildId);
+                                    CustomReplies.Add(serverCustomReplies.GroupBy(x => x.GuildId).First());
 
                                     var uow = _db.UnitOfWork();
                                     uow.CustomReplies.RemoveById(customReplyToDelete.Id);
@@ -640,10 +648,6 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                 catch (Exception e)
                                 {
                                     throw;
-                                }
-                                finally
-                                {
-                                    semaphoreSlim.Release();
                                 }
 
                             }

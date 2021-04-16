@@ -17,7 +17,7 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
             modelBuilder
                 .HasAnnotation("ProductVersion", "3.1.3");
 
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.Streaming.LiveUser", b =>
+            modelBuilder.Entity("AegisLiveBot.DAL.Models.Streaming.LiveUserDb", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
