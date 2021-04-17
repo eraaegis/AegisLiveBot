@@ -64,7 +64,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                 var customReplies = customRepliesByGroup.Where(x => 
                     (x.Channels.Count == 0 || x.Channels.Select(x => x.Id).Contains(response.Result.ChannelId)) // no channels selected, or selected channels only
                     && DateTime.UtcNow.AddMinutes(-x.Cooldown) > x.LastTriggered // cooldown
-                    && x.Triggers.Any(y => y.All(z => response.Result.Content.IndexOf(z) >= 0))); // any triggers hit
+                    && x.Triggers.Any(y => y.All(z => response.Result.Content.ToLower().IndexOf(z.ToLower()) >= 0))); // any triggers hit
 
                 if(customReplies == null || customReplies.Count() == 0)
                 {
