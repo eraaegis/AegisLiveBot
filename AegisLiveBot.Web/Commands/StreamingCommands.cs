@@ -19,10 +19,12 @@ namespace AegisLiveBot.Web.Commands
     public class StreamingCommands : BaseCommandModule
     {
         private readonly DbService _db;
+        private readonly ITwitchPollService _service;
 
-        public StreamingCommands(DbService db)
+        public StreamingCommands(DbService db, ITwitchPollService service)
         {
             _db = db;
+            _service = service;
         }
 
         [Command("setstreamingrole")]
@@ -118,12 +120,8 @@ namespace AegisLiveBot.Web.Commands
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task AddLiveUser(CommandContext ctx, DiscordMember user, string twitchName)
         {
-            using (var uow = _db.UnitOfWork())
-            {
-                uow.LiveUsers.UpdateTwitchName(ctx.Guild.Id, user.Id, twitchName);
-                await uow.SaveAsync().ConfigureAwait(false);
-                await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
-            }
+            await _service.AddOrUpdateTwitchName(ctx.Guild.Id, user.Id, twitchName).ConfigureAwait(false);
+            await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
             ctx.Message.DeleteAfter(3);
         }
 
@@ -131,17 +129,14 @@ namespace AegisLiveBot.Web.Commands
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task RemoveLiveUser(CommandContext ctx, DiscordMember user)
         {
-            using (var uow = _db.UnitOfWork())
+            try
             {
-                try
-                {
-                    uow.LiveUsers.RemoveByGuildIdUserId(ctx.Guild.Id, user.Id);
-                    await uow.SaveAsync().ConfigureAwait(false);
-                    await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been unregistered for streaming role.").ConfigureAwait(false);
-                } catch(Exception e)
-                {
-                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
-                }
+                await _service.RemoveLiveUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been unregistered for streaming role.").ConfigureAwait(false);
+            }
+            catch (RepositoryException e)
+            {
+                await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
@@ -150,63 +145,57 @@ namespace AegisLiveBot.Web.Commands
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task ListLiveUser(CommandContext ctx)
         {
-            using (var uow = _db.UnitOfWork())
+            var liveUsers = _service.GetLiveUsersByGuildId(ctx.Guild.Id);
+            if (liveUsers.Count() == 0)
             {
-                var liveUsers = uow.LiveUsers.GetAllByGuildId(ctx.Guild.Id);
-                if (liveUsers.Count() == 0)
+                await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
+            } else
+            {
+                var msg = $"Users registered to streaming role (Star indicates priority):\n";
+                for (var i = 0; i < liveUsers.Count(); ++i)
                 {
-                    await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
-                } else
-                {
-                    var msg = $"Users registered to streaming role (Star indicates priority):\n";
-                    for (var i = 0; i < liveUsers.Count(); ++i)
-                    {
-                        var liveUser = liveUsers.ElementAt(i);
-                        var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
-                        var priority = liveUser.PriorityUser ? "*" : "";
-                        msg += $"{priority}{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
-                    }
-                    await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+                    var liveUser = liveUsers.ElementAt(i);
+                    var user = await ctx.Guild.GetMemberAsync(liveUser.UserId).ConfigureAwait(false);
+                    var priority = liveUser.PriorityUser ? "*" : "";
+                    msg += $"{priority}{i + 1}. {user.DisplayName}, Stream: {liveUser.TwitchName}\n";
                 }
+                await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
+
         [Command("togglepriorityuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task TogglePriorityUser(CommandContext ctx, DiscordUser user)
         {
-            using (var uow = _db.UnitOfWork())
+            try
             {
-                try
-                {
-                    var result = uow.LiveUsers.TogglePriorityUser(ctx.Guild.Id, user.Id);
-                    await uow.SaveAsync().ConfigureAwait(false);
-                    var msg = result ? "now" : "no longer";
-                    await ctx.Channel.SendMessageAsync($"{user.Username} is {msg} a priority user.").ConfigureAwait(false);
-                } catch(RepositoryException e)
-                {
-                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
-                }
+                var result = await _service.TogglePriorityUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
+                var msg = result ? "now" : "no longer";
+                await ctx.Channel.SendMessageAsync($"{user.Username} is {msg} a priority user.").ConfigureAwait(false);
+            }
+            catch(RepositoryException e)
+            {
+                await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
             }
             ctx.Message.DeleteAfter(3);
         }
+
         [Command("togglealertuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task ToggleAlertUser(CommandContext ctx, DiscordUser user)
         {
-            using (var uow = _db.UnitOfWork())
+            try
             {
-                try
-                {
-                    var result = uow.LiveUsers.ToggleAlertUser(ctx.Guild.Id, user.Id);
-                    await uow.SaveAsync().ConfigureAwait(false);
-                    var msg = result ? "now" : "no longer";
-                    await ctx.Channel.SendMessageAsync($"Twitch live alert {msg} set for {user.Username}.").ConfigureAwait(false);
-                } catch(RepositoryException e)
-                {
-                    await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
-                }
+                var result = await _service.ToggleAlertUser(ctx.Guild.Id, user.Id).ConfigureAwait(false);
+                var msg = result ? "now" : "no longer";
+                await ctx.Channel.SendMessageAsync($"Twitch live alert {msg} set for {user.Username}.").ConfigureAwait(false);
             }
+            catch(RepositoryException e)
+            {
+                await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
+            }
+            ctx.Message.DeleteAfter(3);
         }
     }
 }
