@@ -13,6 +13,7 @@ namespace AegisLiveBot.DAL
         ILiveUserRepository LiveUsers { get; }
         IRoastMsgRepository RoastMsgs { get; }
         ICustomReplyRepository CustomReplies { get; }
+        IInhouseRepository Inhouses { get; }
         void Save();
         Task SaveAsync();
     }
