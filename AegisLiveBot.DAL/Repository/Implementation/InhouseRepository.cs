@@ -21,6 +21,7 @@ namespace AegisLiveBot.DAL.Repository.Implementation
                 oldInhouseDb.MidEmoji = inhouseQueue.Emojis[PlayerRole.Mid];
                 oldInhouseDb.BotEmoji = inhouseQueue.Emojis[PlayerRole.Bot];
                 oldInhouseDb.SupEmoji = inhouseQueue.Emojis[PlayerRole.Sup];
+                oldInhouseDb.FillEmoji = inhouseQueue.Emojis[PlayerRole.Fill];
                 _dbset.Update(oldInhouseDb);
                 return;
             }
@@ -32,7 +33,8 @@ namespace AegisLiveBot.DAL.Repository.Implementation
                 JglEmoji = inhouseQueue.Emojis[PlayerRole.Jgl],
                 MidEmoji = inhouseQueue.Emojis[PlayerRole.Mid],
                 BotEmoji = inhouseQueue.Emojis[PlayerRole.Bot],
-                SupEmoji = inhouseQueue.Emojis[PlayerRole.Sup]
+                SupEmoji = inhouseQueue.Emojis[PlayerRole.Sup],
+                FillEmoji = inhouseQueue.Emojis[PlayerRole.Fill]
             };
             _dbset.Add(inhouseDb);
         }

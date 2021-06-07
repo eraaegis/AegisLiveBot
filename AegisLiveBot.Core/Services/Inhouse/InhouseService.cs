@@ -71,6 +71,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                     inhouseQueue.Emojis[PlayerRole.Mid] = inhouse.MidEmoji;
                     inhouseQueue.Emojis[PlayerRole.Bot] = inhouse.BotEmoji;
                     inhouseQueue.Emojis[PlayerRole.Sup] = inhouse.SupEmoji;
+                    inhouseQueue.Emojis[PlayerRole.Fill] = inhouse.FillEmoji;
                     InhouseQueues.Add(inhouseQueue);
                 }
             }
@@ -140,6 +141,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             inhouseQueue.Emojis[PlayerRole.Mid] = emojis.FirstOrDefault(x => x.Name == "MID") ?? "MID:";
             inhouseQueue.Emojis[PlayerRole.Bot] = emojis.FirstOrDefault(x => x.Name == "BOT") ?? "BOT:";
             inhouseQueue.Emojis[PlayerRole.Sup] = emojis.FirstOrDefault(x => x.Name == "SUP") ?? "SUP:";
+            inhouseQueue.Emojis[PlayerRole.Fill] = emojis.FirstOrDefault(x => x.Name == "FILL") ?? "FILL:";
             return inhouseQueue;
         }
 
@@ -151,29 +153,54 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 return;
             }
 
-            inhouseQueue.Top.Remove(user);
-            inhouseQueue.Jgl.Remove(user);
-            inhouseQueue.Mid.Remove(user);
-            inhouseQueue.Bot.Remove(user);
-            inhouseQueue.Sup.Remove(user);
+            var inhousePlayer = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Player.Id == user.Id);
+            if (inhousePlayer == null)
+            {
+                inhousePlayer = new InhousePlayer(user);
+                inhouseQueue.PlayersInQueue.Add(inhousePlayer);
+            }
 
             switch (role)
             {
                 case PlayerRole.Top:
-                    inhouseQueue.Top.Add(user);
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Top] = true;
                     break;
                 case PlayerRole.Jgl:
-                    inhouseQueue.Jgl.Add(user);
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Jgl] = true;
                     break;
                 case PlayerRole.Mid:
-                    inhouseQueue.Mid.Add(user);
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Mid] = true;
                     break;
                 case PlayerRole.Bot:
-                    inhouseQueue.Bot.Add(user);
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Bot] = true;
                     break;
                 case PlayerRole.Sup:
-                    inhouseQueue.Sup.Add(user);
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Sup] = true;
                     break;
+                case PlayerRole.Fill:
+                    inhousePlayer.QueuedRoles[PlayerRole.Top] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Jgl] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Mid] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Bot] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Sup] = false;
+                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = true;
+                    break;
+            }
+
+            if (inhousePlayer.QueuedRoles[PlayerRole.Top] && inhousePlayer.QueuedRoles[PlayerRole.Jgl] &&
+                inhousePlayer.QueuedRoles[PlayerRole.Mid] && inhousePlayer.QueuedRoles[PlayerRole.Bot] && inhousePlayer.QueuedRoles[PlayerRole.Sup])
+            {
+                inhousePlayer.QueuedRoles[PlayerRole.Top] = false;
+                inhousePlayer.QueuedRoles[PlayerRole.Jgl] = false;
+                inhousePlayer.QueuedRoles[PlayerRole.Mid] = false;
+                inhousePlayer.QueuedRoles[PlayerRole.Bot] = false;
+                inhousePlayer.QueuedRoles[PlayerRole.Sup] = false;
+                inhousePlayer.QueuedRoles[PlayerRole.Fill] = true;
             }
 
             await ShowQueue(channel).ConfigureAwait(false);
@@ -189,11 +216,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 return;
             }
 
-            inhouseQueue.Top.Remove(user);
-            inhouseQueue.Jgl.Remove(user);
-            inhouseQueue.Mid.Remove(user);
-            inhouseQueue.Bot.Remove(user);
-            inhouseQueue.Sup.Remove(user);
+            inhouseQueue.PlayersInQueue.RemoveAll(x => x.Player.Id == user.Id);
 
             await ShowQueue(channel).ConfigureAwait(false);
         }
@@ -213,69 +236,133 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 inhouseQueue.Emojis[PlayerRole.Jgl] == "JGL:" ||
                 inhouseQueue.Emojis[PlayerRole.Mid] == "MID:" ||
                 inhouseQueue.Emojis[PlayerRole.Bot] == "BOT:" ||
-                inhouseQueue.Emojis[PlayerRole.Sup] == "SUP:")
+                inhouseQueue.Emojis[PlayerRole.Sup] == "SUP:" ||
+                inhouseQueue.Emojis[PlayerRole.Fill] == "FILL:")
             {
-                emojiWarning = $"\nAdd the corresponding emojis with name :TOP:, :JGL:, :MID:, :BOT:, :SUP:, and use {_prefix}resetqueuech [channel] to use emojis.";
+                emojiWarning = $"\nAdd the corresponding emojis with name :TOP:, :JGL:, :MID:, :BOT:, :SUP:, :FILL:, and use {_prefix}resetqueuech [channel] to use emojis.";
             }
 
-            embedBuilder.Description = $"{inhouseQueue.Emojis[PlayerRole.Top]} {string.Join(", ", inhouseQueue.Top.Select(x => x.DisplayName))}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Jgl]} {string.Join(", ", inhouseQueue.Jgl.Select(x => x.DisplayName))}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Mid]} {string.Join(", ", inhouseQueue.Mid.Select(x => x.DisplayName))}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Bot]} {string.Join(", ", inhouseQueue.Bot.Select(x => x.DisplayName))}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Sup]} {string.Join(", ", inhouseQueue.Sup.Select(x => x.DisplayName))}\n\n" +
+            var topPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Top]).Select(x => x.Player.DisplayName);
+            var jglPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Jgl]).Select(x => x.Player.DisplayName);
+            var midPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Mid]).Select(x => x.Player.DisplayName);
+            var botPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Bot]).Select(x => x.Player.DisplayName);
+            var supPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Sup]).Select(x => x.Player.DisplayName);
+            var fillPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Fill]).Select(x => x.Player.DisplayName);
+
+            embedBuilder.Description = $"{inhouseQueue.Emojis[PlayerRole.Top]} {string.Join(", ", topPlayers)}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Jgl]} {string.Join(", ", jglPlayers)}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Mid]} {string.Join(", ", midPlayers)}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Bot]} {string.Join(", ", botPlayers)}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Sup]} {string.Join(", ", supPlayers)}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Fill]} {string.Join(", ", fillPlayers)}\n\n" +
                 $"Use {_prefix}queue [role] to join or {_prefix}leave to leave" + emojiWarning;
 
-            await channel.SendMessageAsync(embed: embedBuilder.Build());
+            await channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
         }
 
         private async Task AttemptMatchmake(DiscordChannel channel)
         {
             var inhouseQueue = InhouseQueues.FirstOrDefault(x => x.ChannelId == channel.Id);
-
-            var inhouseGame = new InhouseGame(channel.Id);
-            // in case someone leaves queue while making game, put this in try block and exit
-            try
+            
+            // if less than 10 players in queue, no game can be made
+            if (inhouseQueue.PlayersInQueue.Count() < 10)
             {
-                if (inhouseQueue.Top.Count >= 2 &&
-                    inhouseQueue.Jgl.Count >= 2 &&
-                    inhouseQueue.Mid.Count >= 2 &&
-                    inhouseQueue.Bot.Count >= 2 &&
-                    inhouseQueue.Sup.Count >= 2)
-                {
-                    var scramble = AegisRandom.RandomNumber(0, 2);
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Top[scramble], PlayerSide.Blue, PlayerRole.Top));
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Top[1 - scramble], PlayerSide.Red, PlayerRole.Top));
-                    scramble = AegisRandom.RandomNumber(0, 2);
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Jgl[scramble], PlayerSide.Blue, PlayerRole.Jgl));
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Jgl[1 - scramble], PlayerSide.Red, PlayerRole.Jgl));
-                    scramble = AegisRandom.RandomNumber(0, 2);
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Mid[scramble], PlayerSide.Blue, PlayerRole.Mid));
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Mid[1 - scramble], PlayerSide.Red, PlayerRole.Mid));
-                    scramble = AegisRandom.RandomNumber(0, 2);
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Bot[scramble], PlayerSide.Blue, PlayerRole.Bot));
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Bot[1 - scramble], PlayerSide.Red, PlayerRole.Bot));
-                    scramble = AegisRandom.RandomNumber(0, 2);
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Sup[scramble], PlayerSide.Blue, PlayerRole.Sup));
-                    inhouseGame.InhousePlayers.Add(new InhousePlayer(inhouseQueue.Sup[1 - scramble], PlayerSide.Red, PlayerRole.Sup));
-                    InhouseGames.Add(inhouseGame);
-                } else
-                {
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                AegisLog.Log(ex.Message, ex);
                 return;
             }
 
+            // brute force check for matchmake with buckets
+            var buckets = new List<MatchmakeBucket>();
+            buckets.Add(new MatchmakeBucket());
+
+            MatchmakeBucket filledBucket = null;
+            foreach(var inhousePlayer in inhouseQueue.PlayersInQueue)
+            {
+                var tempBuckets = new List<MatchmakeBucket>();
+                foreach(var queuedRole in inhousePlayer.QueuedRoles)
+                {
+                    if (queuedRole.Value)
+                    {
+                        if (queuedRole.Key == PlayerRole.Fill)
+                        {
+                            foreach (var bucket in buckets)
+                            {
+                                for (var i = PlayerRole.Top; i < PlayerRole.Fill; ++i)
+                                {
+                                    var tempBucket = new MatchmakeBucket(bucket);
+                                    if (tempBucket.Players[i].Count() < 2)
+                                    {
+                                        tempBucket.Players[i].Add(inhousePlayer);
+                                        tempBuckets.Add(tempBucket);
+                                        if (tempBucket.Filled() && filledBucket == null)
+                                        {
+                                            filledBucket = tempBucket;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (filledBucket != null)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            foreach (var bucket in buckets)
+                            {
+                                var tempBucket = new MatchmakeBucket(bucket);
+                                if (tempBucket.Players[queuedRole.Key].Count() < 2)
+                                {
+                                    tempBucket.Players[queuedRole.Key].Add(inhousePlayer);
+                                    tempBuckets.Add(tempBucket);
+                                    if (tempBucket.Filled() && filledBucket == null)
+                                    {
+                                        filledBucket = tempBucket;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (filledBucket != null)
+                    {
+                        break;
+                    }
+                }
+                buckets = tempBuckets;
+                if (filledBucket != null)
+                {
+                    break;
+                }
+            }
+
+            // if no bucket is filled, then no game is found
+            if(filledBucket == null)
+            {
+                return;
+            }
+
+            // remove all players in bucket from queue
+            var inhouseGame = new InhouseGame(channel.Id);
+
+            foreach(var players in filledBucket.Players)
+            {
+                var scramble = AegisRandom.RandomNumber(0, 2);
+                var player = players.Value[scramble];
+                player.PlayerSide = PlayerSide.Blue;
+                player.PlayerRole = players.Key;
+                inhouseGame.InhousePlayers.Add(player);
+                player = players.Value[1 - scramble];
+                player.PlayerSide = PlayerSide.Red;
+                player.PlayerRole = players.Key;
+                inhouseGame.InhousePlayers.Add(player);
+            }
+
+            InhouseGames.Add(inhouseGame);
+
             // remove everybody in the game from queue
-            var inhousePlayers = inhouseGame.InhousePlayers.Select(x => x.Player);
-            inhouseQueue.Top.RemoveAll(x => inhousePlayers.Any(y => x == y));
-            inhouseQueue.Jgl.RemoveAll(x => inhousePlayers.Any(y => x == y));
-            inhouseQueue.Mid.RemoveAll(x => inhousePlayers.Any(y => x == y));
-            inhouseQueue.Bot.RemoveAll(x => inhousePlayers.Any(y => x == y));
-            inhouseQueue.Sup.RemoveAll(x => inhousePlayers.Any(y => x == y));
+            var inhousePlayers = inhouseGame.InhousePlayers.Select(x => x.Player.Id);
+            inhouseQueue.PlayersInQueue.RemoveAll(x => inhousePlayers.Any(y => x.Player.Id == y));
 
             await ReadyCheck(channel, inhouseGame).ConfigureAwait(false);
         }
@@ -288,14 +375,13 @@ namespace AegisLiveBot.Core.Services.Inhouse
             {
                 mentionMsg += $"{player.Player.Mention} ";
             }
-            await channel.SendMessageAsync(mentionMsg).ConfigureAwait(false);
             var embedBuilder = BuildGameFoundMessage(inhouseGame, inhouseQueue);
-            var channelMessage = await channel.SendMessageAsync(embed: embedBuilder.Build());
+            var channelMessage = await channel.SendMessageAsync(mentionMsg, embed: embedBuilder.Build()).ConfigureAwait(false);
 
             var checkEmoji = DiscordEmoji.FromName(_client, ":white_check_mark:");
             var xEmoji = DiscordEmoji.FromName(_client, ":x:");
-            await channelMessage.CreateReactionAsync(checkEmoji);
-            await channelMessage.CreateReactionAsync(xEmoji);
+            await channelMessage.CreateReactionAsync(checkEmoji).ConfigureAwait(false);
+            await channelMessage.CreateReactionAsync(xEmoji).ConfigureAwait(false);
 
             await Task.Run(async () =>
             {
@@ -311,24 +397,8 @@ namespace AegisLiveBot.Core.Services.Inhouse
                         {
                             if (inhousePlayer.PlayerStatus == PlayerStatus.Ready)
                             {
-                                switch (inhousePlayer.PlayerRole)
-                                {
-                                    case PlayerRole.Top:
-                                        inhouseQueue.Top.Insert(0, inhousePlayer.Player);
-                                        break;
-                                    case PlayerRole.Jgl:
-                                        inhouseQueue.Jgl.Insert(0, inhousePlayer.Player);
-                                        break;
-                                    case PlayerRole.Mid:
-                                        inhouseQueue.Mid.Insert(0, inhousePlayer.Player);
-                                        break;
-                                    case PlayerRole.Bot:
-                                        inhouseQueue.Bot.Insert(0, inhousePlayer.Player);
-                                        break;
-                                    case PlayerRole.Sup:
-                                        inhouseQueue.Sup.Insert(0, inhousePlayer.Player);
-                                        break;
-                                }
+                                inhousePlayer.PlayerStatus = PlayerStatus.None;
+                                inhouseQueue.PlayersInQueue.Insert(0, inhousePlayer);
                             }
                         }
 
@@ -346,7 +416,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                         var readyPlayer = inhouseGame.InhousePlayers.FirstOrDefault(x => x.Player.Id == response.Result.User.Id);
                         readyPlayer.PlayerStatus = PlayerStatus.Ready;
                         var embedBuilder = BuildGameFoundMessage(inhouseGame, inhouseQueue);
-                        await channelMessage.ModifyAsync(embed: embedBuilder.Build());
+                        await channelMessage.ModifyAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
 
                         if (inhouseGame.InhousePlayers.All(x => x.PlayerStatus == PlayerStatus.Ready))
                         {
@@ -369,24 +439,8 @@ namespace AegisLiveBot.Core.Services.Inhouse
                             {
                                 continue;
                             }
-                            switch (inhousePlayer.PlayerRole)
-                            {
-                                case PlayerRole.Top:
-                                    inhouseQueue.Top.Insert(0, inhousePlayer.Player);
-                                    break;
-                                case PlayerRole.Jgl:
-                                    inhouseQueue.Jgl.Insert(0, inhousePlayer.Player);
-                                    break;
-                                case PlayerRole.Mid:
-                                    inhouseQueue.Mid.Insert(0, inhousePlayer.Player);
-                                    break;
-                                case PlayerRole.Bot:
-                                    inhouseQueue.Bot.Insert(0, inhousePlayer.Player);
-                                    break;
-                                case PlayerRole.Sup:
-                                    inhouseQueue.Sup.Insert(0, inhousePlayer.Player);
-                                    break;
-                            }
+                            inhousePlayer.PlayerStatus = PlayerStatus.None;
+                            inhouseQueue.PlayersInQueue.Insert(0, inhousePlayer);
                         }
 
                         InhouseGames.Remove(inhouseGame);
@@ -402,7 +456,8 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.Title = "📢Game found📢";
             embedBuilder.Description = "If you are ready to play, press ✅\n" +
-                "If you cannot play, press ❌";
+                "If you cannot play, press ❌\n" +
+                "Recheck if it didn't work the first time";
             var bluePlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Blue);
             var bluePlayersString = "";
             foreach (var bluePlayer in bluePlayers)
@@ -417,7 +472,6 @@ namespace AegisLiveBot.Core.Services.Inhouse
             }
             embedBuilder.AddField("BLUE", bluePlayersString, true);
             embedBuilder.AddField("RED", redPlayersString, true);
-            embedBuilder.AddField("", "Recheck if it didn't work the first time");
 
             return embedBuilder;
         }
@@ -459,7 +513,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
 
                     if (inhouseGame.InhousePlayers.Where(x => x.PlayerConfirm == PlayerConfirm.Accept).Count() >= 6)
                     {
-                        await channel.SendMessageAsync($"The game has been recorded as a win for the {playerSide} side");
+                        await channel.SendMessageAsync($"The game has been recorded as a win for the {playerSide} side").ConfigureAwait(false);
                         InhouseGames.Remove(inhouseGame);
                         return;
                     }
@@ -475,7 +529,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
 
                     if (inhouseGame.InhousePlayers.Where(x => x.PlayerConfirm == PlayerConfirm.Deny).Count() >= 6)
                     {
-                        await channel.SendMessageAsync($"The win confirmation has been denied.");
+                        await channel.SendMessageAsync($"The win confirmation has been denied.").ConfigureAwait(false);
                         foreach(var inhousePlayer in inhouseGame.InhousePlayers)
                         {
                             inhousePlayer.PlayerConfirm = PlayerConfirm.None;

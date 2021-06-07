@@ -17,5 +17,7 @@ namespace AegisLiveBot.DAL.Models.Inhouse
         public string BotEmoji { get; set; }
 
         public string SupEmoji { get; set; }
+
+        public string FillEmoji { get; set; }
     }
 }

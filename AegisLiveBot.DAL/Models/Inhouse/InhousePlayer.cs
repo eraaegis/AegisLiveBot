@@ -13,13 +13,26 @@ namespace AegisLiveBot.DAL.Models.Inhouse
         public PlayerRole PlayerRole { get; set; }
         public PlayerConfirm PlayerConfirm { get; set; }
 
-        public InhousePlayer(DiscordMember player, PlayerSide playerSide, PlayerRole playerRole)
+        public Dictionary<PlayerRole, bool> QueuedRoles { get; set; }
+
+        public InhousePlayer(DiscordMember player)
         {
             Player = player;
             PlayerStatus = PlayerStatus.None;
+            PlayerConfirm = PlayerConfirm.None;
+            QueuedRoles = new Dictionary<PlayerRole, bool>();
+            QueuedRoles.Add(PlayerRole.Top, false);
+            QueuedRoles.Add(PlayerRole.Jgl, false);
+            QueuedRoles.Add(PlayerRole.Mid, false);
+            QueuedRoles.Add(PlayerRole.Bot, false);
+            QueuedRoles.Add(PlayerRole.Sup, false);
+            QueuedRoles.Add(PlayerRole.Fill, false);
+        }
+
+        public InhousePlayer(DiscordMember player, PlayerSide playerSide, PlayerRole playerRole) : this(player)
+        {
             PlayerSide = playerSide;
             PlayerRole = playerRole;
-            PlayerConfirm = PlayerConfirm.None;
         }
     }
 
@@ -42,7 +55,8 @@ namespace AegisLiveBot.DAL.Models.Inhouse
         Jgl,
         Mid,
         Bot,
-        Sup
+        Sup,
+        Fill
     }
 
     public enum PlayerConfirm

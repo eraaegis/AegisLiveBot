@@ -64,27 +64,35 @@ namespace AegisLiveBot.Web.Commands
         }
 
         [Command("queue")]
-        public async Task ShowQueue(CommandContext ctx, string role = "")
+        public async Task ShowQueue(CommandContext ctx, string role = "", DiscordMember player = null)
         {
+            if (player == null)
+            {
+                player = ctx.Member;
+            }
             if (role.ToLower() == "top")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Top).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Top).ConfigureAwait(false);
             }
             else if (role.ToLower() == "jgl" || role.ToLower() == "jg" || role.ToLower() == "jungle" || role.ToLower() == "jng")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Jgl).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Jgl).ConfigureAwait(false);
             }
             else if (role.ToLower() == "mid")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Mid).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Mid).ConfigureAwait(false);
             }
             else if (role.ToLower() == "bot" || role.ToLower() == "adc")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Bot).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Bot).ConfigureAwait(false);
             }
             else if (role.ToLower() == "sup" || role.ToLower() == "support")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Sup).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Sup).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "fill")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Fill).ConfigureAwait(false);
             }
             else
             {
