@@ -22,5 +22,7 @@ namespace AegisLiveBot.DAL
         public DbSet<RoastMsg> RoastMsgs { get; set; }
         public DbSet<CustomReplyDb> CustomReplies { get; set; }
         public DbSet<InhouseDb> Inhouses { get; set; }
+        public DbSet<InhousePlayerStatDb> InhousePlayerStats { get; set; }
+        public DbSet<MatchHistoryDb> MatchHistories { get; set; }
     }
 }

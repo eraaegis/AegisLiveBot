@@ -64,7 +64,7 @@ namespace AegisLiveBot.Web.Commands
         }
 
         [Command("queue")]
-        public async Task ShowQueue(CommandContext ctx, string role = "")
+        public async Task Queue(CommandContext ctx, string role = "")
         {
             if (role.ToLower() == "top")
             {
@@ -93,6 +93,73 @@ namespace AegisLiveBot.Web.Commands
             else
             {
                 await _service.ShowQueue(ctx.Channel).ConfigureAwait(false);
+            }
+        }
+
+        [Command("adminqueue")]
+        [RequireUserPermissions(Permissions.Administrator)]
+        public async Task AdminQueue(CommandContext ctx, string role = "", DiscordMember user = null)
+        {
+            var player = user;
+            if (player == null)
+            {
+                player = ctx.Member;
+            }
+            if (role.ToLower() == "top")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Top).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "jgl" || role.ToLower() == "jg" || role.ToLower() == "jungle" || role.ToLower() == "jng")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Jgl).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "mid")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Mid).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "bot" || role.ToLower() == "adc")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Bot).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "sup" || role.ToLower() == "support")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Sup).ConfigureAwait(false);
+            }
+            else if (role.ToLower() == "fill")
+            {
+                await _service.QueueUp(ctx.Channel, player, PlayerRole.Fill).ConfigureAwait(false);
+            }
+            else
+            {
+                await _service.ShowQueue(ctx.Channel).ConfigureAwait(false);
+            }
+        }
+
+        [Command("rank")]
+        public async Task ShowRank(CommandContext ctx)
+        {
+            using (var uow = _db.UnitOfWork())
+            {
+                var playerStat = uow.InhousePlayerStats.GetByPlayerId(ctx.Member.Id);
+                var wins = 0;
+                var loses = 0;
+                var winrate = 0.0;
+                if (playerStat != null)
+                {
+                    wins = playerStat.Wins;
+                    loses = playerStat.Loses;
+                }
+                if ((wins + loses) != 0)
+                {
+                    winrate = 100 * wins / (wins + loses);
+                }
+                var embedBuilder = new DiscordEmbedBuilder();
+                embedBuilder.Title = ctx.Member.DisplayName + "'s stats";
+                embedBuilder.AddField("Wins", wins.ToString(), true);
+                embedBuilder.AddField("Loses", loses.ToString(), true);
+                embedBuilder.AddField("Winrate", winrate.ToString("0.0") + "%", true);
+
+                await ctx.Channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
             }
         }
 

@@ -453,9 +453,11 @@ namespace AegisLiveBot.Core.Services.Inhouse
 
         private DiscordEmbedBuilder BuildGameFoundMessage(InhouseGame inhouseGame, InhouseQueue inhouseQueue)
         {
+            var blueWinrate = CalculateBlueSideWinrate(inhouseGame);
             var embedBuilder = new DiscordEmbedBuilder();
             embedBuilder.Title = "📢Game found📢";
-            embedBuilder.Description = "If you are ready to play, press ✅\n" +
+            embedBuilder.Description = $"Blue side expected winrate is {blueWinrate.ToString("0.0")}%\n" +
+                "If you are ready to play, press ✅\n" +
                 "If you cannot play, press ❌\n" +
                 "Recheck if it didn't work the first time";
             var bluePlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Blue);
@@ -474,6 +476,47 @@ namespace AegisLiveBot.Core.Services.Inhouse
             embedBuilder.AddField("RED", redPlayersString, true);
 
             return embedBuilder;
+        }
+
+        private double CalculateBlueSideWinrate(InhouseGame inhouseGame)
+        {
+            var overallBlueWinrate = 0.0;
+            var overallRedWinrate = 0.0;
+            var uow = _db.UnitOfWork();
+            foreach (var player in inhouseGame.InhousePlayers)
+            {
+                var playerStat = uow.InhousePlayerStats.GetByPlayerId(player.Player.Id);
+                if (playerStat == null)
+                {
+                    if (player.PlayerSide == PlayerSide.Blue)
+                    {
+                        overallBlueWinrate += 50.0;
+                    }
+                    else
+                    {
+                        overallRedWinrate += 50.0;
+                    }
+                    continue;
+                }
+                var totalGames = playerStat.Wins + playerStat.Loses;
+                var wins = playerStat.Wins + 10 - Math.Min(10, totalGames);
+                var loses = playerStat.Loses + 10 - Math.Min(10, totalGames);
+                var winrate = (double)(wins / (wins + loses));
+                if (player.PlayerSide == PlayerSide.Blue)
+                {
+                    overallBlueWinrate += winrate;
+                } else
+                {
+                    overallRedWinrate += winrate;
+                }
+            }
+
+            if (overallBlueWinrate == 0.0 && overallRedWinrate == 0.0)
+            {
+                return 50.0;
+            }
+
+            return 100 * overallBlueWinrate / (overallBlueWinrate + overallRedWinrate);
         }
 
         public async Task ConfirmWin(DiscordChannel channel, DiscordMember user)
@@ -514,6 +557,10 @@ namespace AegisLiveBot.Core.Services.Inhouse
                     if (inhouseGame.InhousePlayers.Where(x => x.PlayerConfirm == PlayerConfirm.Accept).Count() >= 6)
                     {
                         await channel.SendMessageAsync($"The game has been recorded as a win for the {playerSide} side").ConfigureAwait(false);
+                        var uow = _db.UnitOfWork();
+                        uow.MatchHistories.AddByInhouseGame(inhouseGame, initPlayer.PlayerSide);
+                        uow.InhousePlayerStats.AddByInhouseGame(inhouseGame, initPlayer.PlayerSide);
+                        await uow.SaveAsync().ConfigureAwait(false);
                         InhouseGames.Remove(inhouseGame);
                         return;
                     }

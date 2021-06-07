@@ -14,6 +14,8 @@ namespace AegisLiveBot.DAL
         IRoastMsgRepository RoastMsgs { get; }
         ICustomReplyRepository CustomReplies { get; }
         IInhouseRepository Inhouses { get; }
+        IInhousePlayerStatRepository InhousePlayerStats { get; }
+        IMatchHistoryRepository MatchHistories { get; }
         void Save();
         Task SaveAsync();
     }
