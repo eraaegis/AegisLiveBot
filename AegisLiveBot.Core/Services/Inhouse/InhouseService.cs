@@ -27,7 +27,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
         Task ResetQueueChannel(DiscordChannel channel);
         Task QueueUp(DiscordChannel channel, DiscordMember user, PlayerRole role);
         Task Unqueue(DiscordChannel channel, DiscordMember user);
-        Task ShowQueue(DiscordChannel channel);
+        Task ShowQueue(DiscordChannel channel, string message = "");
         Task ConfirmWin(DiscordChannel channel, DiscordMember user);
     }
     public class InhouseService : IInhouseService
@@ -221,7 +221,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             await ShowQueue(channel).ConfigureAwait(false);
         }
 
-        public async Task ShowQueue(DiscordChannel channel)
+        public async Task ShowQueue(DiscordChannel channel, string message = "")
         {
             var inhouseQueue = InhouseQueues.FirstOrDefault(x => x.ChannelId == channel.Id);
             if (inhouseQueue == null)
@@ -257,7 +257,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 $"{inhouseQueue.Emojis[PlayerRole.Fill]} {string.Join(", ", fillPlayers)}\n\n" +
                 $"Use {_prefix}queue [role] to join or {_prefix}leave to leave" + emojiWarning;
 
-            await channel.SendMessageAsync(embed: embedBuilder.Build()).ConfigureAwait(false);
+            await channel.SendMessageAsync(message, embed: embedBuilder.Build()).ConfigureAwait(false);
         }
 
         private async Task AttemptMatchmake(DiscordChannel channel)
@@ -391,7 +391,6 @@ namespace AegisLiveBot.Core.Services.Inhouse
                     var response = await interactivity.WaitForReactionAsync(x => x.Message.Id == channelMessage.Id && x.User.Id != _client.CurrentUser.Id).ConfigureAwait(false);
                     if (response.TimedOut)
                     {
-                        await channel.SendMessageAsync("Game timed out, readied players will now be put back in queue.").ConfigureAwait(false);
                         // put everyone who was ready back to queue
                         foreach (var inhousePlayer in inhouseGame.InhousePlayers)
                         {
@@ -401,6 +400,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                                 inhouseQueue.PlayersInQueue.Insert(0, inhousePlayer);
                             }
                         }
+                        await ShowQueue(channel, "Game timed out, readied players will now be put back in queue.").ConfigureAwait(false);
 
                         InhouseGames.Remove(inhouseGame);
                         return;
@@ -444,7 +444,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                         }
 
                         InhouseGames.Remove(inhouseGame);
-                        await channel.SendMessageAsync("A player cancelled the game and was removed from the queue\nAll other players have been put back into the queue").ConfigureAwait(false);
+                        await ShowQueue(channel, "A player cancelled the game and was removed from the queue\nAll other players have been put back into the queue").ConfigureAwait(false);
                         return;
                     }
                 }
