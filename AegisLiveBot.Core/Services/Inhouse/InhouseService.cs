@@ -278,50 +278,46 @@ namespace AegisLiveBot.Core.Services.Inhouse
             foreach(var inhousePlayer in inhouseQueue.PlayersInQueue)
             {
                 var tempBuckets = new List<MatchmakeBucket>();
+
+                var roles = new List<PlayerRole>();
                 foreach(var queuedRole in inhousePlayer.QueuedRoles)
                 {
                     if (queuedRole.Value)
                     {
                         if (queuedRole.Key == PlayerRole.Fill)
                         {
-                            foreach (var bucket in buckets)
+                            for (var i = PlayerRole.Top; i < PlayerRole.Fill; ++i)
                             {
-                                for (var i = PlayerRole.Top; i < PlayerRole.Fill; ++i)
-                                {
-                                    var tempBucket = new MatchmakeBucket(bucket);
-                                    if (tempBucket.Players[i].Count() < 2)
-                                    {
-                                        tempBucket.Players[i].Add(inhousePlayer);
-                                        tempBuckets.Add(tempBucket);
-                                        if (tempBucket.Filled() && filledBucket == null)
-                                        {
-                                            filledBucket = tempBucket;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (filledBucket != null)
-                                {
-                                    break;
-                                }
+                                roles.Add(i);
+                            }
+                        } else
+                        {
+                            roles.Add(queuedRole.Key);
+                        }
+                    }
+                }
+
+                while (roles.Count() > 0)
+                {
+                    var scrambleRole = AegisRandom.RandomNumber(0, roles.Count());
+                    var role = roles[scrambleRole];
+                    roles.RemoveAt(scrambleRole);
+                    foreach(var bucket in buckets)
+                    {
+                        var tempBucket = new MatchmakeBucket(bucket);
+                        if (tempBucket.Players[role].Count() < 2)
+                        {
+                            tempBucket.Players[role].Add(inhousePlayer);
+                            tempBuckets.Add(tempBucket);
+                            if (tempBucket.Filled() && filledBucket == null)
+                            {
+                                filledBucket = tempBucket;
+                                break;
                             }
                         }
-                        else
+                        if (filledBucket != null)
                         {
-                            foreach (var bucket in buckets)
-                            {
-                                var tempBucket = new MatchmakeBucket(bucket);
-                                if (tempBucket.Players[queuedRole.Key].Count() < 2)
-                                {
-                                    tempBucket.Players[queuedRole.Key].Add(inhousePlayer);
-                                    tempBuckets.Add(tempBucket);
-                                    if (tempBucket.Filled() && filledBucket == null)
-                                    {
-                                        filledBucket = tempBucket;
-                                        break;
-                                    }
-                                }
-                            }
+                            break;
                         }
                     }
                     if (filledBucket != null)
@@ -501,7 +497,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 var totalGames = playerStat.Wins + playerStat.Loses;
                 var wins = playerStat.Wins + 10 - Math.Min(10, totalGames);
                 var loses = playerStat.Loses + 10 - Math.Min(10, totalGames);
-                var winrate = (double)(wins / (wins + loses));
+                var winrate = 100.0 * wins / (wins + loses);
                 if (player.PlayerSide == PlayerSide.Blue)
                 {
                     overallBlueWinrate += winrate;
