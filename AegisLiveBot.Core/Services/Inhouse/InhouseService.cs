@@ -520,7 +520,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var gamesSkipped = 0;
             var gamesSkippedWarning = "";
             var inhouseGame = InhouseGames.FirstOrDefault(x => x.ChannelId == channel.Id && x.InhousePlayers.Any(y => y.Player.Id == user.Id));
-            while (inhouseGame.StartTime.AddHours(2) < DateTime.UtcNow)
+            while (inhouseGame != null && inhouseGame.StartTime.AddHours(2) < DateTime.UtcNow)
             {
                 ++gamesSkipped;
                 InhouseGames.Remove(inhouseGame);
