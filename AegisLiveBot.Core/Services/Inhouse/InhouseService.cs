@@ -521,7 +521,19 @@ namespace AegisLiveBot.Core.Services.Inhouse
 
         public async Task ConfirmWin(DiscordChannel channel, DiscordMember user)
         {
+            var gamesSkipped = 0;
+            var gamesSkippedWarning = "";
             var inhouseGame = InhouseGames.FirstOrDefault(x => x.ChannelId == channel.Id && x.InhousePlayers.Any(y => y.Player.Id == user.Id));
+            while (inhouseGame.StartTime.AddHours(2) < DateTime.UtcNow)
+            {
+                ++gamesSkipped;
+                InhouseGames.Remove(inhouseGame);
+                inhouseGame = InhouseGames.FirstOrDefault(x => x.ChannelId == channel.Id && x.InhousePlayers.Any(y => y.Player.Id == user.Id));
+            }
+            if (gamesSkipped > 0)
+            {
+                gamesSkippedWarning = $"*WARNING*: {gamesSkipped} game(s) were skipped since they were not recorded within two hours\n\n";
+            }
             if (inhouseGame == null || inhouseGame.CheckingWin)
             {
                 return;
@@ -530,7 +542,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var initPlayer = inhouseGame.InhousePlayers.FirstOrDefault(x => x.Player.Id == user.Id);
             initPlayer.PlayerConfirm = PlayerConfirm.Accept;
             var playerSide = initPlayer.PlayerSide == PlayerSide.Blue? "Blue": "Red";
-            var channelMessage = await channel.SendMessageAsync($"{user.DisplayName} is confirming a win on their side. ({playerSide})\nAt least 6 players must use the checkmark to confirm the win\nRecheck if it didn't work the first time").ConfigureAwait(false);
+            var channelMessage = await channel.SendMessageAsync(gamesSkippedWarning + $"{user.DisplayName} is confirming a win on their side. ({playerSide})\nAt least 6 players must use the checkmark to confirm the win\nRecheck if it didn't work the first time").ConfigureAwait(false);
             var checkEmoji = DiscordEmoji.FromName(_client, ":white_check_mark:");
             var xEmoji = DiscordEmoji.FromName(_client, ":x:");
             await channelMessage.CreateReactionAsync(checkEmoji).ConfigureAwait(false);

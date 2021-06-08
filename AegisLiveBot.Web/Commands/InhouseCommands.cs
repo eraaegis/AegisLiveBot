@@ -113,15 +113,15 @@ namespace AegisLiveBot.Web.Commands
             {
                 await _service.QueueUp(ctx.Channel, player, PlayerRole.Jgl).ConfigureAwait(false);
             }
-            else if (role.ToLower() == "mid")
+            else if (role.ToLower() == "mid" || role.ToLower() == "ap")
             {
                 await _service.QueueUp(ctx.Channel, player, PlayerRole.Mid).ConfigureAwait(false);
             }
-            else if (role.ToLower() == "bot" || role.ToLower() == "adc")
+            else if (role.ToLower() == "bot" || role.ToLower() == "adc" || role.ToLower() == "ad")
             {
                 await _service.QueueUp(ctx.Channel, player, PlayerRole.Bot).ConfigureAwait(false);
             }
-            else if (role.ToLower() == "sup" || role.ToLower() == "support")
+            else if (role.ToLower() == "sup" || role.ToLower() == "support" || role.ToLower() == "supp")
             {
                 await _service.QueueUp(ctx.Channel, player, PlayerRole.Sup).ConfigureAwait(false);
             }
