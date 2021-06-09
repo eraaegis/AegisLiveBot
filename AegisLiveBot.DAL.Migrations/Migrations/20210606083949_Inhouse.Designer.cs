@@ -3,14 +3,16 @@ using System;
 using AegisLiveBot.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace AegisLiveBot.DAL.Migrations.Migrations
 {
     [DbContext(typeof(Context))]
-    partial class ContextModelSnapshot : ModelSnapshot
+    [Migration("20210606083949_Inhouse")]
+    partial class Inhouse
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,67 +67,12 @@ namespace AegisLiveBot.DAL.Migrations.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("BotEmoji")
-                        .HasColumnType("TEXT");
-
                     b.Property<ulong>("ChannelId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("FillEmoji")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("JglEmoji")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("MidEmoji")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SupEmoji")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TopEmoji")
-                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.ToTable("Inhouses");
-                });
-
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.Inhouse.InhousePlayerStatDb", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Loses")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("PlayerId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Wins")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("InhousePlayerStats");
-                });
-
-            modelBuilder.Entity("AegisLiveBot.DAL.Models.Inhouse.MatchHistoryDb", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("PlayersLost")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PlayersWon")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("MatchHistories");
                 });
 
             modelBuilder.Entity("AegisLiveBot.DAL.Models.ServerSetting", b =>

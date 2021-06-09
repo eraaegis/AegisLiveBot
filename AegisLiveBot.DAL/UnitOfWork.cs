@@ -23,6 +23,15 @@ namespace AegisLiveBot.DAL
         private ICustomReplyRepository _customReplies;
         public ICustomReplyRepository CustomReplies => _customReplies ?? (_customReplies = new CustomReplyRepository(_context));
 
+        private IInhouseRepository _inhouses;
+        public IInhouseRepository Inhouses => _inhouses ?? (_inhouses = new InhouseRepository(_context));
+
+        private IInhousePlayerStatRepository _inhousePlayerStats;
+        public IInhousePlayerStatRepository InhousePlayerStats => _inhousePlayerStats ?? (_inhousePlayerStats = new InhousePlayerStatRepository(_context));
+
+        private IMatchHistoryRepository _matchHistories;
+        public IMatchHistoryRepository MatchHistories => _matchHistories ?? (_matchHistories = new MatchHistoryRepository(_context));
+
         public UnitOfWork(Context context)
         {
             _context = context;
