@@ -295,9 +295,10 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 if (roles.Count() == 0)
                 {
                     fillPlayers.Add(inhousePlayer);
-                    if (buckets[0].PlayerCount + fillPlayers.Count() >= 10)
+                    var maxBucket = buckets.FirstOrDefault(x => x.PlayerCount + fillPlayers.Count() >= 10);
+                    if (maxBucket != null)
                     {
-                        filledBucket = buckets[0];
+                        filledBucket = maxBucket;
                     }
                 }
                 else
