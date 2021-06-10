@@ -274,58 +274,58 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var buckets = new List<MatchmakeBucket>();
             buckets.Add(new MatchmakeBucket());
 
+            // we reserve the fill players for last
             MatchmakeBucket filledBucket = null;
-            foreach(var inhousePlayer in inhouseQueue.PlayersInQueue)
+            var fillPlayers = new List<InhousePlayer>();
+
+            foreach (var inhousePlayer in inhouseQueue.PlayersInQueue)
             {
                 var tempBuckets = new List<MatchmakeBucket>();
 
                 var roles = new List<PlayerRole>();
-                foreach(var queuedRole in inhousePlayer.QueuedRoles)
+                foreach (var queuedRole in inhousePlayer.QueuedRoles)
                 {
-                    if (queuedRole.Value)
+                    if (queuedRole.Value && queuedRole.Key != PlayerRole.Fill)
                     {
-                        if (queuedRole.Key == PlayerRole.Fill)
-                        {
-                            for (var i = PlayerRole.Top; i < PlayerRole.Fill; ++i)
-                            {
-                                roles.Add(i);
-                            }
-                        } else
-                        {
-                            roles.Add(queuedRole.Key);
-                        }
+                        roles.Add(queuedRole.Key);
                     }
                 }
 
-                while (roles.Count() > 0)
+                // if no roles, means fill
+                if (roles.Count() == 0)
                 {
-                    var scrambleRole = AegisRandom.RandomNumber(0, roles.Count());
-                    var role = roles[scrambleRole];
-                    roles.RemoveAt(scrambleRole);
-                    foreach(var bucket in buckets)
+                    fillPlayers.Add(inhousePlayer);
+                    var maxBucket = buckets.FirstOrDefault(x => x.PlayerCount + fillPlayers.Count() >= 10);
+                    if (maxBucket != null)
                     {
-                        var tempBucket = new MatchmakeBucket(bucket);
-                        if (tempBucket.Players[role].Count() < 2)
+                        filledBucket = maxBucket;
+                    }
+                }
+                else
+                {
+                    while (roles.Count() > 0)
+                    {
+                        var scrambleRole = AegisRandom.RandomNumber(0, roles.Count());
+                        var role = roles[scrambleRole];
+                        roles.RemoveAt(scrambleRole);
+                        foreach (var bucket in buckets)
                         {
-                            tempBucket.Players[role].Add(inhousePlayer);
+                            var tempBucket = new MatchmakeBucket(bucket);
+                            if (tempBucket.Players[role].Count() < 2)
+                            {
+                                tempBucket.Players[role].Add(inhousePlayer);
+                                tempBucket.PlayerCount += 1;
+                            }
                             tempBuckets.Add(tempBucket);
-                            if (tempBucket.Filled() && filledBucket == null)
+                            if (tempBucket.PlayerCount + fillPlayers.Count() >= 10)
                             {
                                 filledBucket = tempBucket;
                                 break;
                             }
                         }
-                        if (filledBucket != null)
-                        {
-                            break;
-                        }
                     }
-                    if (filledBucket != null)
-                    {
-                        break;
-                    }
+                    buckets = tempBuckets;
                 }
-                buckets = tempBuckets;
                 if (filledBucket != null)
                 {
                     break;
@@ -333,12 +333,36 @@ namespace AegisLiveBot.Core.Services.Inhouse
             }
 
             // if no bucket is filled, then no game is found
-            if(filledBucket == null)
+            if (filledBucket == null)
             {
                 return;
             }
 
-            // remove all players in bucket from queue
+            // now we put all fill players in
+            var missingRoles = new List<PlayerRole>();
+            foreach (var role in filledBucket.Players)
+            {
+                if (role.Value.Count() == 0)
+                {
+                    missingRoles.Add(role.Key);
+                    missingRoles.Add(role.Key);
+                }
+                else if (role.Value.Count() == 1)
+                {
+                    missingRoles.Add(role.Key);
+                }
+            }
+
+            foreach (var fillPlayer in fillPlayers)
+            {
+                var scramble = AegisRandom.RandomNumber(0, missingRoles.Count());
+                var role = missingRoles[scramble];
+                missingRoles.RemoveAt(scramble);
+                filledBucket.Players[role].Add(fillPlayer);
+                filledBucket.PlayerCount += 1;
+            }
+
+            // insert players into game and randomize side
             var inhouseGame = new InhouseGame(channel.Id);
 
             foreach(var players in filledBucket.Players)

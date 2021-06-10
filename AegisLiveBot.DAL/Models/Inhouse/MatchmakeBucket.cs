@@ -9,6 +9,8 @@ namespace AegisLiveBot.DAL.Models.Inhouse
     {
         public Dictionary<PlayerRole, List<InhousePlayer>> Players { get; set; }
 
+        public int PlayerCount { get; set; }
+
         public MatchmakeBucket()
         {
             Players = new Dictionary<PlayerRole, List<InhousePlayer>>();
@@ -17,6 +19,7 @@ namespace AegisLiveBot.DAL.Models.Inhouse
             Players.Add(PlayerRole.Mid, new List<InhousePlayer>());
             Players.Add(PlayerRole.Bot, new List<InhousePlayer>());
             Players.Add(PlayerRole.Sup, new List<InhousePlayer>());
+            PlayerCount = 0;
         }
 
         public MatchmakeBucket(MatchmakeBucket other): this()
@@ -26,19 +29,7 @@ namespace AegisLiveBot.DAL.Models.Inhouse
             Players[PlayerRole.Mid] = other.Players[PlayerRole.Mid].ToList();
             Players[PlayerRole.Bot] = other.Players[PlayerRole.Bot].ToList();
             Players[PlayerRole.Sup] = other.Players[PlayerRole.Sup].ToList();
-        }
-
-        public bool Filled()
-        {
-            if (Players[PlayerRole.Top].Count() >= 2 &&
-                Players[PlayerRole.Jgl].Count() >= 2 &&
-                Players[PlayerRole.Mid].Count() >= 2 &&
-                Players[PlayerRole.Bot].Count() >= 2 &&
-                Players[PlayerRole.Sup].Count() >= 2)
-            {
-                return true;
-            }
-            return false;
+            PlayerCount = other.PlayerCount;
         }
     }
 }
