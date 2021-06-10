@@ -315,15 +315,11 @@ namespace AegisLiveBot.Core.Services.Inhouse
                             {
                                 tempBucket.Players[role].Add(inhousePlayer);
                                 tempBucket.PlayerCount += 1;
-                                tempBuckets.Add(tempBucket);
-                                if (tempBucket.PlayerCount + fillPlayers.Count() >= 10)
-                                {
-                                    filledBucket = tempBucket;
-                                    break;
-                                }
                             }
-                            if (filledBucket != null)
+                            tempBuckets.Add(tempBucket);
+                            if (tempBucket.PlayerCount + fillPlayers.Count() >= 10)
                             {
+                                filledBucket = tempBucket;
                                 break;
                             }
                         }
