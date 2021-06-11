@@ -545,6 +545,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
                         // put everyone who was ready back to queue
                         foreach (var queueGroup in inhouseGame.QueueGroups)
                         {
+                            var removedPlayers = new List<InhousePlayer>();
                             foreach (var inhousePlayer in queueGroup.Players)
                             {
                                 if (inhousePlayer.PlayerStatus == PlayerStatus.Ready)
@@ -552,9 +553,10 @@ namespace AegisLiveBot.Core.Services.Inhouse
                                     inhousePlayer.PlayerStatus = PlayerStatus.None;
                                 } else
                                 {
-                                    queueGroup.Players.Remove(inhousePlayer);
+                                    removedPlayers.Add(inhousePlayer);
                                 }
                             }
+                            queueGroup.Players.RemoveAll(x => removedPlayers.Any(y => x == y));
                             inhouseQueue.PlayersInQueue.Insert(0, queueGroup);
                         }
                         await ShowQueue(channel, "Game timed out, readied players will now be put back in queue.").ConfigureAwait(false);
@@ -592,16 +594,18 @@ namespace AegisLiveBot.Core.Services.Inhouse
                         // put everyone back to queue except the author
                         foreach (var queueGroup in inhouseGame.QueueGroups)
                         {
+                            var removedPlayers = new List<InhousePlayer>();
                             foreach (var inhousePlayer in queueGroup.Players)
                             {
                                 if (inhousePlayer.Player.Id == response.Result.User.Id)
                                 {
-                                    queueGroup.Players.Remove(inhousePlayer);
+                                    removedPlayers.Add(inhousePlayer);
                                 } else
                                 {
                                     inhousePlayer.PlayerStatus = PlayerStatus.None;
                                 }
                             }
+                            queueGroup.Players.RemoveAll(x => removedPlayers.Any(y => x == y));
                             inhouseQueue.PlayersInQueue.Insert(0, queueGroup);
                         }
 

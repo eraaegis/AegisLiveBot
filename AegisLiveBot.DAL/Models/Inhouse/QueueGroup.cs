@@ -93,6 +93,10 @@ namespace AegisLiveBot.DAL.Models.Inhouse
 
                 foreach (PlayerRole i in Enum.GetValues(typeof(PlayerRole)))
                 {
+                    if (i == PlayerRole.Fill)
+                    {
+                        continue;
+                    }
                     if (!roleCombination.ContainsKey(i))
                     {
                         rand = rnd.Next(0, fillPlayers.Count());
@@ -109,6 +113,10 @@ namespace AegisLiveBot.DAL.Models.Inhouse
                 var tempPossibleRoleCombinations = new List<Dictionary<PlayerRole, InhousePlayer>>();
                 foreach (PlayerRole role in Enum.GetValues(typeof(PlayerRole)))
                 {
+                    if (role == PlayerRole.Fill)
+                    {
+                        continue;
+                    }
                     foreach (var possibleRoleCombination in possibleRoleCombinations)
                     {
                         var tempPossibleRoleCombination = possibleRoleCombination.ToDictionary(x => x.Key, x => x.Value);
