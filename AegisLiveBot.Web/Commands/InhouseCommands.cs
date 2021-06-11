@@ -64,36 +64,42 @@ namespace AegisLiveBot.Web.Commands
         }
 
         [Command("queue")]
-        public async Task Queue(CommandContext ctx, string role = "")
+        public async Task Queue(CommandContext ctx, string role = "", DiscordMember other = null)
         {
             if (role.ToLower() == "top")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Top).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Top, other).ConfigureAwait(false);
             }
             else if (role.ToLower() == "jgl" || role.ToLower() == "jg" || role.ToLower() == "jungle" || role.ToLower() == "jng")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Jgl).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Jgl, other).ConfigureAwait(false);
             }
             else if (role.ToLower() == "mid")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Mid).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Mid, other).ConfigureAwait(false);
             }
             else if (role.ToLower() == "bot" || role.ToLower() == "adc")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Bot).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Bot, other).ConfigureAwait(false);
             }
             else if (role.ToLower() == "sup" || role.ToLower() == "support")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Sup).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Sup, other).ConfigureAwait(false);
             }
             else if (role.ToLower() == "fill")
             {
-                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Fill).ConfigureAwait(false);
+                await _service.QueueUp(ctx.Channel, ctx.Member, PlayerRole.Fill, other).ConfigureAwait(false);
             }
             else
             {
                 await _service.ShowQueue(ctx.Channel).ConfigureAwait(false);
             }
+        }
+
+        [Command("teamup")]
+        public async Task TeamUp(CommandContext ctx, DiscordMember other)
+        {
+            await _service.TeamUp(ctx.Channel, ctx.Member, other).ConfigureAwait(false);
         }
 
         [Command("adminqueue")]
@@ -133,6 +139,17 @@ namespace AegisLiveBot.Web.Commands
             {
                 await _service.ShowQueue(ctx.Channel).ConfigureAwait(false);
             }
+        }
+
+        [Command("adminteamup")]
+        [RequireUserPermissions(Permissions.Administrator)]
+        public async Task AdminTeamUp(CommandContext ctx, DiscordMember other, DiscordMember user = null)
+        {
+            if (user == null)
+            {
+                user = ctx.Member;
+            }
+            await _service.TeamUp(ctx.Channel, user, other).ConfigureAwait(false);
         }
 
         [Command("rank")]

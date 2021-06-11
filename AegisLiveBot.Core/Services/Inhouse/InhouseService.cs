@@ -25,8 +25,9 @@ namespace AegisLiveBot.Core.Services.Inhouse
         Task SetQueueChannel(DiscordChannel channel);
         Task UnsetQueueChannel(DiscordChannel channel);
         Task ResetQueueChannel(DiscordChannel channel);
-        Task QueueUp(DiscordChannel channel, DiscordMember user, PlayerRole role);
+        Task QueueUp(DiscordChannel channel, DiscordMember user, PlayerRole role, DiscordMember other = null);
         Task Unqueue(DiscordChannel channel, DiscordMember user);
+        Task TeamUp(DiscordChannel channel, DiscordMember player, DiscordMember other);
         Task ShowQueue(DiscordChannel channel, string message = "");
         Task ConfirmWin(DiscordChannel channel, DiscordMember user);
     }
@@ -145,7 +146,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             return inhouseQueue;
         }
 
-        public async Task QueueUp(DiscordChannel channel, DiscordMember user, PlayerRole role)
+        public async Task QueueUp(DiscordChannel channel, DiscordMember user, PlayerRole role, DiscordMember other = null)
         {
             var inhouseQueue = InhouseQueues.FirstOrDefault(x => x.ChannelId == channel.Id);
             if (inhouseQueue == null)
@@ -153,57 +154,69 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 return;
             }
 
-            var inhousePlayer = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Player.Id == user.Id);
-            if (inhousePlayer == null)
+            var queueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == user.Id));
+            InhousePlayer inhousePlayer = null;
+            if (queueGroup == null)
             {
+                queueGroup = new QueueGroup();
                 inhousePlayer = new InhousePlayer(user);
-                inhouseQueue.PlayersInQueue.Add(inhousePlayer);
+                queueGroup.Players.Add(inhousePlayer);
+                inhouseQueue.PlayersInQueue.Add(queueGroup);
+            } else
+            {
+                inhousePlayer = queueGroup.Players.FirstOrDefault(x => x.Player.Id == user.Id);
             }
 
-            switch (role)
+            // if the player in question is already a fill player, do nothing
+            if (!inhousePlayer.QueuedRoles[PlayerRole.Fill])
             {
-                case PlayerRole.Top:
-                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
-                    inhousePlayer.QueuedRoles[PlayerRole.Top] = true;
-                    break;
-                case PlayerRole.Jgl:
-                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
-                    inhousePlayer.QueuedRoles[PlayerRole.Jgl] = true;
-                    break;
-                case PlayerRole.Mid:
-                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
-                    inhousePlayer.QueuedRoles[PlayerRole.Mid] = true;
-                    break;
-                case PlayerRole.Bot:
-                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
-                    inhousePlayer.QueuedRoles[PlayerRole.Bot] = true;
-                    break;
-                case PlayerRole.Sup:
-                    inhousePlayer.QueuedRoles[PlayerRole.Fill] = false;
-                    inhousePlayer.QueuedRoles[PlayerRole.Sup] = true;
-                    break;
-                case PlayerRole.Fill:
+                switch (role)
+                {
+                    case PlayerRole.Top:
+                        inhousePlayer.QueuedRoles[PlayerRole.Top] = true;
+                        break;
+                    case PlayerRole.Jgl:
+                        inhousePlayer.QueuedRoles[PlayerRole.Jgl] = true;
+                        break;
+                    case PlayerRole.Mid:
+                        inhousePlayer.QueuedRoles[PlayerRole.Mid] = true;
+                        break;
+                    case PlayerRole.Bot:
+                        inhousePlayer.QueuedRoles[PlayerRole.Bot] = true;
+                        break;
+                    case PlayerRole.Sup:
+                        inhousePlayer.QueuedRoles[PlayerRole.Sup] = true;
+                        break;
+                    case PlayerRole.Fill:
+                        inhousePlayer.QueuedRoles[PlayerRole.Top] = false;
+                        inhousePlayer.QueuedRoles[PlayerRole.Jgl] = false;
+                        inhousePlayer.QueuedRoles[PlayerRole.Mid] = false;
+                        inhousePlayer.QueuedRoles[PlayerRole.Bot] = false;
+                        inhousePlayer.QueuedRoles[PlayerRole.Sup] = false;
+                        inhousePlayer.QueuedRoles[PlayerRole.Fill] = true;
+                        break;
+                }
+
+                if (inhousePlayer.QueuedRoles[PlayerRole.Top] && inhousePlayer.QueuedRoles[PlayerRole.Jgl] &&
+                    inhousePlayer.QueuedRoles[PlayerRole.Mid] && inhousePlayer.QueuedRoles[PlayerRole.Bot] && inhousePlayer.QueuedRoles[PlayerRole.Sup])
+                {
                     inhousePlayer.QueuedRoles[PlayerRole.Top] = false;
                     inhousePlayer.QueuedRoles[PlayerRole.Jgl] = false;
                     inhousePlayer.QueuedRoles[PlayerRole.Mid] = false;
                     inhousePlayer.QueuedRoles[PlayerRole.Bot] = false;
                     inhousePlayer.QueuedRoles[PlayerRole.Sup] = false;
                     inhousePlayer.QueuedRoles[PlayerRole.Fill] = true;
-                    break;
+                }
             }
 
-            if (inhousePlayer.QueuedRoles[PlayerRole.Top] && inhousePlayer.QueuedRoles[PlayerRole.Jgl] &&
-                inhousePlayer.QueuedRoles[PlayerRole.Mid] && inhousePlayer.QueuedRoles[PlayerRole.Bot] && inhousePlayer.QueuedRoles[PlayerRole.Sup])
+            // attempt to join team if provided
+            if (other != null)
             {
-                inhousePlayer.QueuedRoles[PlayerRole.Top] = false;
-                inhousePlayer.QueuedRoles[PlayerRole.Jgl] = false;
-                inhousePlayer.QueuedRoles[PlayerRole.Mid] = false;
-                inhousePlayer.QueuedRoles[PlayerRole.Bot] = false;
-                inhousePlayer.QueuedRoles[PlayerRole.Sup] = false;
-                inhousePlayer.QueuedRoles[PlayerRole.Fill] = true;
+                await TeamUp(channel, user, other).ConfigureAwait(false);
+            } else
+            {
+                await ShowQueue(channel).ConfigureAwait(false);
             }
-
-            await ShowQueue(channel).ConfigureAwait(false);
 
             await AttemptMatchmake(channel).ConfigureAwait(false);
         }
@@ -216,9 +229,71 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 return;
             }
 
-            inhouseQueue.PlayersInQueue.RemoveAll(x => x.Player.Id == user.Id);
+            RemovePlayerFromQueueGroup(inhouseQueue, user);
 
             await ShowQueue(channel).ConfigureAwait(false);
+        }
+
+        public async Task TeamUp(DiscordChannel channel, DiscordMember player, DiscordMember other)
+        {
+            var inhouseQueue = InhouseQueues.FirstOrDefault(x => x.ChannelId == channel.Id);
+            if (inhouseQueue == null)
+            {
+                return;
+            }
+
+            var queueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == player.Id));
+            if (queueGroup == null)
+            {
+                return;
+            }
+            var queueGroupIndex = inhouseQueue.PlayersInQueue.IndexOf(queueGroup);
+
+            var inhousePlayer = queueGroup.Players.FirstOrDefault(x => x.Player.Id == player.Id);
+            var otherQueueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == other.Id));
+            if (otherQueueGroup == null)
+            {
+                return;
+            }
+            var otherQueueGroupIndex = inhouseQueue.PlayersInQueue.IndexOf(otherQueueGroup);
+
+            var msg = "";
+            if (queueGroup == otherQueueGroup)
+            {
+                msg = "**WARNING**: Cannot join your own team.";
+            }
+            else if (otherQueueGroup.CanAddPlayer(inhousePlayer))
+            {
+                // dirty code, remove from queue group first, then add player
+                RemovePlayerFromQueueGroup(inhouseQueue, player);
+                otherQueueGroup.Players.Add(inhousePlayer);
+                // if otherQueueGroup is earlier, then move it back to the caller's location in list to avoid skipping queue
+                if (otherQueueGroupIndex < queueGroupIndex)
+                {
+                    inhouseQueue.PlayersInQueue.Remove(otherQueueGroup);
+                    inhouseQueue.PlayersInQueue.Insert(queueGroupIndex - 1, otherQueueGroup);
+                }
+            }
+            else
+            {
+                msg = "**WARNING**: Unable to join team: No possible role combination found for group on the same team.";
+            }
+            await ShowQueue(channel, msg).ConfigureAwait(false);
+        }
+
+        private void RemovePlayerFromQueueGroup(InhouseQueue inhouseQueue, DiscordMember user)
+        {
+            var queueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == user.Id));
+            if (queueGroup == null)
+            {
+                return;
+            }
+
+            queueGroup.Players.RemoveAll(x => x.Player.Id == user.Id);
+            if (queueGroup.Players.Count() == 0)
+            {
+                inhouseQueue.PlayersInQueue.Remove(queueGroup);
+            }
         }
 
         public async Task ShowQueue(DiscordChannel channel, string message = "")
@@ -242,20 +317,44 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 emojiWarning = $"\nAdd the corresponding emojis with name :TOP:, :JGL:, :MID:, :BOT:, :SUP:, :FILL:, and use {_prefix}resetqueuech [channel] to use emojis.";
             }
 
-            var topPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Top]).Select(x => x.Player.DisplayName);
-            var jglPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Jgl]).Select(x => x.Player.DisplayName);
-            var midPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Mid]).Select(x => x.Player.DisplayName);
-            var botPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Bot]).Select(x => x.Player.DisplayName);
-            var supPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Sup]).Select(x => x.Player.DisplayName);
-            var fillPlayers = inhouseQueue.PlayersInQueue.Where(x => x.QueuedRoles[PlayerRole.Fill]).Select(x => x.Player.DisplayName);
+            var currentGroup = 0;
+            var playersStrings = new Dictionary<PlayerRole, List<string>>();
+            playersStrings.Add(PlayerRole.Top, new List<string>());
+            playersStrings.Add(PlayerRole.Jgl, new List<string>());
+            playersStrings.Add(PlayerRole.Mid, new List<string>());
+            playersStrings.Add(PlayerRole.Bot, new List<string>());
+            playersStrings.Add(PlayerRole.Sup, new List<string>());
+            playersStrings.Add(PlayerRole.Fill, new List<string>());
+            foreach (var queueGroup in inhouseQueue.PlayersInQueue)
+            {
+                var currentGroupString = "";
+                if (queueGroup.Players.Count() > 1)
+                {
+                    currentGroupString = $"**[{currentGroup}]**";
+                    currentGroup += 1;
+                }
 
-            embedBuilder.Description = $"{inhouseQueue.Emojis[PlayerRole.Top]} {string.Join(", ", topPlayers)}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Jgl]} {string.Join(", ", jglPlayers)}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Mid]} {string.Join(", ", midPlayers)}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Bot]} {string.Join(", ", botPlayers)}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Sup]} {string.Join(", ", supPlayers)}\n" +
-                $"{inhouseQueue.Emojis[PlayerRole.Fill]} {string.Join(", ", fillPlayers)}\n\n" +
-                $"Use {_prefix}queue [role] to join or {_prefix}leave to leave" + emojiWarning;
+                foreach(var player in queueGroup.Players)
+                {
+                    foreach(var playerRole in player.QueuedRoles.Where(x => x.Value).Select(x => x.Key))
+                    {
+                        playersStrings[playerRole].Add($"{currentGroupString}{player.Player.DisplayName}");
+                    }
+                }
+            }
+
+            embedBuilder.Description = $"{inhouseQueue.Emojis[PlayerRole.Top]} {string.Join(", ", playersStrings[PlayerRole.Top])}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Jgl]} {string.Join(", ", playersStrings[PlayerRole.Jgl])}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Mid]} {string.Join(", ", playersStrings[PlayerRole.Mid])}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Bot]} {string.Join(", ", playersStrings[PlayerRole.Bot])}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Sup]} {string.Join(", ", playersStrings[PlayerRole.Sup])}\n" +
+                $"{inhouseQueue.Emojis[PlayerRole.Fill]} {string.Join(", ", playersStrings[PlayerRole.Fill])}\n\n" +
+                "Commands:\n" +
+                $"{_prefix}queue [role] - Queue up with role\n" +
+                $"{_prefix}queue [role] [player] - Join player's team with role\n" +
+                $"{_prefix}teamup [player] - Join player's team\n" +
+                $"{_prefix}leave - Leave the queue\n" +
+                emojiWarning;
 
             await channel.SendMessageAsync(message, embed: embedBuilder.Build()).ConfigureAwait(false);
         }
@@ -265,7 +364,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var inhouseQueue = InhouseQueues.FirstOrDefault(x => x.ChannelId == channel.Id);
             
             // if less than 10 players in queue, no game can be made
-            if (inhouseQueue.PlayersInQueue.Count() < 10)
+            if (inhouseQueue.PlayersInQueue.Sum(x => x.Players.Count()) < 10)
             {
                 return;
             }
@@ -274,58 +373,71 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var buckets = new List<MatchmakeBucket>();
             buckets.Add(new MatchmakeBucket());
 
-            // we reserve the fill players for last
+            // we reserve SOLO fill players for last
             MatchmakeBucket filledBucket = null;
-            var fillPlayers = new List<InhousePlayer>();
+            var fillPlayers = new List<QueueGroup>();
 
-            foreach (var inhousePlayer in inhouseQueue.PlayersInQueue)
+            foreach(var queueGroup in inhouseQueue.PlayersInQueue)
             {
                 var tempBuckets = new List<MatchmakeBucket>();
 
-                var roles = new List<PlayerRole>();
-                foreach (var queuedRole in inhousePlayer.QueuedRoles)
+                // check for SOLO fill players
+                if (queueGroup.Players.Count() == 1 && queueGroup.Players[0].QueuedRoles[PlayerRole.Fill])
                 {
-                    if (queuedRole.Value && queuedRole.Key != PlayerRole.Fill)
-                    {
-                        roles.Add(queuedRole.Key);
-                    }
-                }
-
-                // if no roles, means fill
-                if (roles.Count() == 0)
-                {
-                    fillPlayers.Add(inhousePlayer);
+                    fillPlayers.Add(queueGroup);
                     var maxBucket = buckets.FirstOrDefault(x => x.PlayerCount + fillPlayers.Count() >= 10);
                     if (maxBucket != null)
                     {
                         filledBucket = maxBucket;
+                        break;
                     }
+                    continue;
                 }
-                else
+
+                // get each role combination from each queueGroup
+                foreach (var bucket in buckets)
                 {
-                    while (roles.Count() > 0)
+                    // check to see if a copy of bucket without roleCombination is already in
+                    var hasOldBucket = false;
+                    var roleCombinations = queueGroup.PossibleRoleCombinations();
+                    while (roleCombinations.Count() > 0)
                     {
-                        var scrambleRole = AegisRandom.RandomNumber(0, roles.Count());
-                        var role = roles[scrambleRole];
-                        roles.RemoveAt(scrambleRole);
-                        foreach (var bucket in buckets)
+                        var scramble = AegisRandom.RandomNumber(0, roleCombinations.Count());
+                        var roleCombination = roleCombinations[scramble];
+                        roleCombinations.RemoveAt(scramble);
+                        var playerSides = AegisRandom.RandomBool() ? new List<PlayerSide>() { PlayerSide.Blue, PlayerSide.Red } : new List<PlayerSide>() { PlayerSide.Red, PlayerSide.Blue };
+                        foreach (var i in playerSides)
                         {
                             var tempBucket = new MatchmakeBucket(bucket);
-                            if (tempBucket.Players[role].Count() < 2)
+                            var canPutIntoBucket = tempBucket.TryAddRoleCombination(roleCombination, i);
+                            if (canPutIntoBucket)
                             {
-                                tempBucket.Players[role].Add(inhousePlayer);
-                                tempBucket.PlayerCount += 1;
+                                tempBucket.QueueGroups.Add(queueGroup);
+                                tempBuckets.Add(tempBucket);
                             }
-                            tempBuckets.Add(tempBucket);
+                            else if (!hasOldBucket)
+                            {
+                                tempBuckets.Add(tempBucket);
+                                hasOldBucket = true;
+                            }
+
                             if (tempBucket.PlayerCount + fillPlayers.Count() >= 10)
                             {
                                 filledBucket = tempBucket;
                                 break;
                             }
                         }
+                        if (filledBucket != null)
+                        {
+                            break;
+                        }
                     }
-                    buckets = tempBuckets;
+                    if (filledBucket != null)
+                    {
+                        break;
+                    }
                 }
+                buckets = tempBuckets;
                 if (filledBucket != null)
                 {
                     break;
@@ -339,50 +451,69 @@ namespace AegisLiveBot.Core.Services.Inhouse
             }
 
             // now we put all fill players in
-            var missingRoles = new List<PlayerRole>();
-            foreach (var role in filledBucket.Players)
+            var missingBlueRoles = new List<PlayerRole>();
+            var missingRedRoles = new List<PlayerRole>();
+            foreach (PlayerRole role in Enum.GetValues(typeof(PlayerRole)))
             {
-                if (role.Value.Count() == 0)
+                if (role == PlayerRole.Fill)
                 {
-                    missingRoles.Add(role.Key);
-                    missingRoles.Add(role.Key);
+                    continue;
                 }
-                else if (role.Value.Count() == 1)
-                {
-                    missingRoles.Add(role.Key);
-                }
+                missingBlueRoles.Add(role);
+                missingRedRoles.Add(role);
+            }
+            foreach (var role in filledBucket.BluePlayers)
+            {
+                missingBlueRoles.Remove(role.Key);
+            }
+            foreach (var role in filledBucket.RedPlayers)
+            {
+                missingRedRoles.Remove(role.Key);
             }
 
             foreach (var fillPlayer in fillPlayers)
             {
-                var scramble = AegisRandom.RandomNumber(0, missingRoles.Count());
-                var role = missingRoles[scramble];
-                missingRoles.RemoveAt(scramble);
-                filledBucket.Players[role].Add(fillPlayer);
-                filledBucket.PlayerCount += 1;
+                var scramble = AegisRandom.RandomNumber(0, missingBlueRoles.Count() + missingRedRoles.Count());
+                if (scramble < missingBlueRoles.Count())
+                {
+                    var role = missingBlueRoles[scramble];
+                    missingBlueRoles.RemoveAt(scramble);
+                    filledBucket.BluePlayers.Add(role, fillPlayer.Players[0]);
+                    filledBucket.QueueGroups.Add(fillPlayer);
+                    filledBucket.PlayerCount += 1;
+                } else
+                {
+                    var role = missingRedRoles[scramble - missingBlueRoles.Count()];
+                    missingRedRoles.RemoveAt(scramble - missingBlueRoles.Count());
+                    filledBucket.RedPlayers.Add(role, fillPlayer.Players[0]);
+                    filledBucket.QueueGroups.Add(fillPlayer);
+                    filledBucket.PlayerCount += 1;
+                }
             }
 
             // insert players into game and randomize side
             var inhouseGame = new InhouseGame(channel.Id);
 
-            foreach(var players in filledBucket.Players)
+            foreach(var player in filledBucket.BluePlayers)
             {
-                var scramble = AegisRandom.RandomNumber(0, 2);
-                var player = players.Value[scramble];
-                player.PlayerSide = PlayerSide.Blue;
-                player.PlayerRole = players.Key;
-                inhouseGame.InhousePlayers.Add(player);
-                player = players.Value[1 - scramble];
-                player.PlayerSide = PlayerSide.Red;
-                player.PlayerRole = players.Key;
-                inhouseGame.InhousePlayers.Add(player);
+                player.Value.PlayerSide = PlayerSide.Blue;
+                player.Value.PlayerRole = player.Key;
+                inhouseGame.InhousePlayers.Add(player.Value);
+            }
+
+            foreach (var player in filledBucket.RedPlayers)
+            {
+                player.Value.PlayerSide = PlayerSide.Red;
+                player.Value.PlayerRole = player.Key;
+                inhouseGame.InhousePlayers.Add(player.Value);
             }
 
             InhouseGames.Add(inhouseGame);
+            inhouseGame.QueueGroups = filledBucket.QueueGroups;
 
             // remove everybody in the game from queue
             var inhousePlayers = inhouseGame.InhousePlayers.Select(x => x.Player.Id);
-            inhouseQueue.PlayersInQueue.RemoveAll(x => inhousePlayers.Any(y => x.Player.Id == y));
+            inhouseQueue.PlayersInQueue.RemoveAll(x => filledBucket.QueueGroups.Any(y => y == x));
 
             await ReadyCheck(channel, inhouseGame).ConfigureAwait(false);
         }
@@ -412,13 +543,19 @@ namespace AegisLiveBot.Core.Services.Inhouse
                     if (response.TimedOut)
                     {
                         // put everyone who was ready back to queue
-                        foreach (var inhousePlayer in inhouseGame.InhousePlayers)
+                        foreach (var queueGroup in inhouseGame.QueueGroups)
                         {
-                            if (inhousePlayer.PlayerStatus == PlayerStatus.Ready)
+                            foreach (var inhousePlayer in queueGroup.Players)
                             {
-                                inhousePlayer.PlayerStatus = PlayerStatus.None;
-                                inhouseQueue.PlayersInQueue.Insert(0, inhousePlayer);
+                                if (inhousePlayer.PlayerStatus == PlayerStatus.Ready)
+                                {
+                                    inhousePlayer.PlayerStatus = PlayerStatus.None;
+                                } else
+                                {
+                                    queueGroup.Players.Remove(inhousePlayer);
+                                }
                             }
+                            inhouseQueue.PlayersInQueue.Insert(0, queueGroup);
                         }
                         await ShowQueue(channel, "Game timed out, readied players will now be put back in queue.").ConfigureAwait(false);
 
@@ -453,14 +590,19 @@ namespace AegisLiveBot.Core.Services.Inhouse
                             continue;
                         }
                         // put everyone back to queue except the author
-                        foreach (var inhousePlayer in inhouseGame.InhousePlayers)
+                        foreach (var queueGroup in inhouseGame.QueueGroups)
                         {
-                            if (response.Result.User.Id == inhousePlayer.Player.Id)
+                            foreach (var inhousePlayer in queueGroup.Players)
                             {
-                                continue;
+                                if (inhousePlayer.Player.Id == response.Result.User.Id)
+                                {
+                                    queueGroup.Players.Remove(inhousePlayer);
+                                } else
+                                {
+                                    inhousePlayer.PlayerStatus = PlayerStatus.None;
+                                }
                             }
-                            inhousePlayer.PlayerStatus = PlayerStatus.None;
-                            inhouseQueue.PlayersInQueue.Insert(0, inhousePlayer);
+                            inhouseQueue.PlayersInQueue.Insert(0, queueGroup);
                         }
 
                         InhouseGames.Remove(inhouseGame);
@@ -480,13 +622,13 @@ namespace AegisLiveBot.Core.Services.Inhouse
                 "If you are ready to play, press ✅\n" +
                 "If you cannot play, press ❌\n" +
                 "Recheck if it didn't work the first time";
-            var bluePlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Blue);
+            var bluePlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Blue).OrderBy(x => x.PlayerRole);
             var bluePlayersString = "";
             foreach (var bluePlayer in bluePlayers)
             {
                 bluePlayersString += $"{inhouseQueue.Emojis[bluePlayer.PlayerRole]}{_statusEmojis[bluePlayer.PlayerStatus]}{bluePlayer.Player.DisplayName}\n";
             }
-            var redPlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Red);
+            var redPlayers = inhouseGame.InhousePlayers.Where(x => x.PlayerSide == PlayerSide.Red).OrderBy(x => x.PlayerRole);
             var redPlayersString = "";
             foreach (var redPlayer in redPlayers)
             {

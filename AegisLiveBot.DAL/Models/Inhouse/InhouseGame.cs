@@ -9,6 +9,7 @@ namespace AegisLiveBot.DAL.Models.Inhouse
     {
         public ulong ChannelId { get; set; }
         public List<InhousePlayer> InhousePlayers { get; set; }
+        public List<QueueGroup> QueueGroups { get; set; }
         public bool CheckingWin { get; set; }
         public DateTime StartTime { get; set; }
 
