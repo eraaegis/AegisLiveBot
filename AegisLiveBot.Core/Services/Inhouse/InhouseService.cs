@@ -250,14 +250,16 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var queueGroupIndex = inhouseQueue.PlayersInQueue.IndexOf(queueGroup);
 
             var inhousePlayer = queueGroup.Players.FirstOrDefault(x => x.Player.Id == player.Id);
+            var msg = "";
             var otherQueueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == other.Id));
             if (otherQueueGroup == null)
             {
+                msg = "**WARNING**: Team does not exist.";
+                await ShowQueue(channel, msg).ConfigureAwait(false);
                 return;
             }
             var otherQueueGroupIndex = inhouseQueue.PlayersInQueue.IndexOf(otherQueueGroup);
 
-            var msg = "";
             if (queueGroup == otherQueueGroup)
             {
                 msg = "**WARNING**: Cannot join your own team.";
