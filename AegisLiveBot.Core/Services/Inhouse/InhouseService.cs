@@ -254,7 +254,7 @@ namespace AegisLiveBot.Core.Services.Inhouse
             var otherQueueGroup = inhouseQueue.PlayersInQueue.FirstOrDefault(x => x.Players.Any(y => y.Player.Id == other.Id));
             if (otherQueueGroup == null)
             {
-                msg = "**WARNING**: Team does not exist.";
+                msg = "**WARNING**: Target player is not in queue.";
                 await ShowQueue(channel, msg).ConfigureAwait(false);
                 return;
             }
