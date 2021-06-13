@@ -11,12 +11,12 @@ namespace AegisLiveBot.DAL.Models.Inhouse
 
         public Dictionary<PlayerRole, string> Emojis { get; set; }
 
-        public List<InhousePlayer> PlayersInQueue { get; set; }
+        public List<QueueGroup> PlayersInQueue { get; set; }
 
         public InhouseQueue(ulong channelId)
         {
             ChannelId = channelId;
-            PlayersInQueue = new List<InhousePlayer>();
+            PlayersInQueue = new List<QueueGroup>();
 
             Emojis = new Dictionary<PlayerRole, string>();
             Emojis.Add(PlayerRole.Top, "TOP:");

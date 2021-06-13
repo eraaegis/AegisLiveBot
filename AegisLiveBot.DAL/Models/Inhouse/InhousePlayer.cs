@@ -28,12 +28,6 @@ namespace AegisLiveBot.DAL.Models.Inhouse
             QueuedRoles.Add(PlayerRole.Sup, false);
             QueuedRoles.Add(PlayerRole.Fill, false);
         }
-
-        public InhousePlayer(DiscordMember player, PlayerSide playerSide, PlayerRole playerRole) : this(player)
-        {
-            PlayerSide = playerSide;
-            PlayerRole = playerRole;
-        }
     }
 
     public enum PlayerStatus
@@ -51,12 +45,12 @@ namespace AegisLiveBot.DAL.Models.Inhouse
 
     public enum PlayerRole
     {
-        Top,
-        Jgl,
-        Mid,
-        Bot,
-        Sup,
-        Fill
+        Top = 1,
+        Jgl = 2,
+        Mid = 4,
+        Bot = 8,
+        Sup = 16,
+        Fill = 32
     }
 
     public enum PlayerConfirm
