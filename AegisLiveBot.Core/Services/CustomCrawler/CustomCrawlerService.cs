@@ -269,7 +269,11 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                     await uow.SaveAsync().ConfigureAwait(false);
 
                                     customReply.Id = customReplyDb.Id;
-                                    CustomReplies.FirstOrDefault(x => x.Key == customReply.GuildId).Append(customReply);
+
+                                    var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
+                                    serverCustomReplies.Add(customReply);
+                                    CustomReplies.RemoveAll(x => x.Key == customReply.GuildId);
+                                    CustomReplies.Add(serverCustomReplies.GroupBy(x => x.GuildId).First());
                                 }
 
                                 await channel.SendMessageAsync("Custom reply successfully saved.").ConfigureAwait(false);
@@ -304,7 +308,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         customReply.Message = argument;
@@ -315,7 +319,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         var words = argument.Split(",").Select(x => x.Trim()).ToList();
@@ -327,7 +331,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         if (int.TryParse(argument, out int result))
@@ -352,7 +356,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         if (channelsArgument.Count == 0)
@@ -373,7 +377,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         if (channelsArgument.Count == 0)
@@ -394,7 +398,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                         if (string.IsNullOrEmpty(argument))
                         {
                             await channel.SendMessageAsync("Please enter an argument.").ConfigureAwait(false);
-                            break;
+                            continue;
                         }
 
                         if (int.TryParse(argument, out int result))
