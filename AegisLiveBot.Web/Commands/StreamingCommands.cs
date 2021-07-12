@@ -38,7 +38,6 @@ namespace AegisLiveBot.Web.Commands
                 await uow.SaveAsync().ConfigureAwait(false); ;
                 await ctx.Channel.SendMessageAsync($"Live role has been set to {discordRole.Name}").ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("getstreamingrole")]
@@ -57,7 +56,6 @@ namespace AegisLiveBot.Web.Commands
                     await ctx.Channel.SendMessageAsync($"Live role is: {role.Name}").ConfigureAwait(false);
                 }
             }
-            ctx.Message.DeleteAfter(3);
         }
         [Command("settwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -70,7 +68,6 @@ namespace AegisLiveBot.Web.Commands
                 await uow.SaveAsync().ConfigureAwait(false);
                 await ctx.Channel.SendMessageAsync($"Twitch Discord channel has been set to {ch.Mention}").ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
         [Command("gettwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -88,7 +85,6 @@ namespace AegisLiveBot.Web.Commands
                     await ctx.Channel.SendMessageAsync($"Twitch Discord channel: {ch.Mention}").ConfigureAwait(false);
                 }
             }
-            ctx.Message.DeleteAfter(3);
         }
         [Command("toggletwitchchannel")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -101,7 +97,6 @@ namespace AegisLiveBot.Web.Commands
                 var msg = result ? "on" : "off";
                 await ctx.Channel.SendMessageAsync($"Streams alert is now {msg}.");
             }
-            ctx.Message.DeleteAfter(3);
         }
         [Command("toggleprioritymode")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -114,7 +109,6 @@ namespace AegisLiveBot.Web.Commands
                 var msg = result ? "on" : "off";
                 await ctx.Channel.SendMessageAsync($"Priority mode is now {msg}.");
             }
-            ctx.Message.DeleteAfter(3);
         }
         [Command("addliveuser")]
         [RequireUserPermissions(Permissions.ManageRoles)]
@@ -122,7 +116,6 @@ namespace AegisLiveBot.Web.Commands
         {
             await _service.AddOrUpdateTwitchName(ctx.Guild.Id, user.Id, twitchName).ConfigureAwait(false);
             await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("removeliveuser")]
@@ -138,7 +131,6 @@ namespace AegisLiveBot.Web.Commands
             {
                 await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("listliveuser")]
@@ -161,7 +153,6 @@ namespace AegisLiveBot.Web.Commands
                 }
                 await ctx.Channel.SendMessageAsync(msg).ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("togglepriorityuser")]
@@ -178,7 +169,6 @@ namespace AegisLiveBot.Web.Commands
             {
                 await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("togglealertuser")]
@@ -195,7 +185,6 @@ namespace AegisLiveBot.Web.Commands
             {
                 await ctx.Channel.SendMessageAsync(e.Message).ConfigureAwait(false);
             }
-            ctx.Message.DeleteAfter(3);
         }
     }
 }

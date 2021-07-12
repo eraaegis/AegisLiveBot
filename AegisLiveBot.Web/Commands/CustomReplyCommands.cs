@@ -33,7 +33,6 @@ namespace AegisLiveBot.Web.Commands
                 var msg = result ? "on" : "off";
                 await ctx.Channel.SendMessageAsync($"Custom replies is now {msg}.");
             }
-            ctx.Message.DeleteAfter(3);
         }
 
         [Command("customreplyeditor")]

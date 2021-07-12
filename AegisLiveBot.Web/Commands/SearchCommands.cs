@@ -14,7 +14,6 @@ namespace AegisLiveBot.Web.Commands
         {
             var search = string.Join("+", s);
             await ctx.Channel.SendMessageAsync($"https://lmgtfy.com/?q={search}").ConfigureAwait(false);
-            ctx.Message.DeleteAfter(3);
         }
     }
 }

@@ -30,7 +30,6 @@ namespace AegisLiveBot.Web.Commands.Fun
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task SetGamesCategory(CommandContext ctx, DiscordChannel cat = null)
         {
-            ctx.Message.DeleteAfter(3);
             if (!cat.IsCategory)
             {
                 await ctx.Channel.SendMessageAsync($"{cat.Mention} is not a category!").ConfigureAwait(false);
@@ -129,7 +128,6 @@ namespace AegisLiveBot.Web.Commands.Fun
                         return;
                     }
                     var responseMsg = response.Result.Content.ToLower();
-                    response.Result.DeleteAfter(3);
                     if (responseMsg == "accept")
                     {
                         break;
