@@ -2,6 +2,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -212,7 +213,7 @@ namespace AegisLiveBot.Core.Services.Fun
             _background = DrawBoard();
             _boardIndex = DrawBoardIndex();
             var board = Draw();
-            await _ch.SendFileAsync(board, $"Now previewing {taflConfiguration.Name}.").ConfigureAwait(false);
+            await Extension.SendFileAsync(_ch, board, $"Now previewing {taflConfiguration.Name}.").ConfigureAwait(false);
         }
         private Image DrawBoard()
         {
@@ -375,7 +376,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 _boardIndex = DrawBoardIndex();
 
                 var board = Draw();
-                await _ch.SendFileAsync(board, $"Tafl game has started!").ConfigureAwait(false);
+                await Extension.SendFileAsync(_ch, board, $"Tafl game has started!").ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
                 startMsg += $"Type 'help' for help, or 'quit' to quit game.\n";
                 startMsg += $"For detailed rules, click here: <http://aagenielsen.dk/tafl_rules.php>";
@@ -404,7 +405,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         afk = false;
                     }
                     board = Draw();
-                    await _ch.SendFileAsync(board).ConfigureAwait(false);
+                    await Extension.SendFileAsync(_ch, board).ConfigureAwait(false);
                     var color = CurrentPlayer == Piece.Black ? "Black" : "White";
                     if (Board.HasWin())
                     {

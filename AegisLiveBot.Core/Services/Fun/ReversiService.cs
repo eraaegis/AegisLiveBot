@@ -2,6 +2,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -276,7 +277,7 @@ namespace AegisLiveBot.Core.Services.Fun
                 initMsg += $"Use 'help' for commands\n";
                 await _ch.SendMessageAsync(initMsg).ConfigureAwait(false);
                 var startMsg = $"{_blackPlayer.DisplayName}(Black) goes first!\n";
-                await _ch.SendFileAsync(board, startMsg).ConfigureAwait(false);
+                await Extension.SendFileAsync(_ch, board, startMsg).ConfigureAwait(false);
 
                 CurrentPlayer = Piece.Black;
                 var curPlayer = _blackPlayer;
@@ -322,7 +323,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             }
                             msg += $"{_blackPlayer.DisplayName}(Black) has {blackPieces} pieces against {_whitePlayer.DisplayName}(White)'s {whitePieces} pieces.";
                             board = Show();
-                            await _ch.SendFileAsync(board).ConfigureAwait(false);
+                            await Extension.SendFileAsync(_ch, board).ConfigureAwait(false);
                             await Dispose(msg).ConfigureAwait(false);
                             break;
                         }
@@ -334,7 +335,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             cannotMove = false;
                         }
                         board = Show();
-                        await _ch.SendFileAsync(board, showMsg).ConfigureAwait(false);
+                        await Extension.SendFileAsync(_ch, board, showMsg).ConfigureAwait(false);
                     }
                     var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _whitePlayer.Id || x.Author.Id == _blackPlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
                     if (response.TimedOut)
@@ -370,7 +371,7 @@ namespace AegisLiveBot.Core.Services.Fun
                             board = Show();
                             var colorMessage = CurrentPlayer == Piece.White ? "White" : "Black";
                             var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
-                            await _ch.SendFileAsync(board).ConfigureAwait(false);
+                            await Extension.SendFileAsync(_ch, board).ConfigureAwait(false);
                         } else if(response.Result.Author.Id == curPlayer.Id)
                         {
                             try

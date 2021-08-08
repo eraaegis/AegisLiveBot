@@ -3,6 +3,7 @@ using AegisLiveBot.DAL.Models.CustomCrawler;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                 }
 
                 var uow = _db.UnitOfWork();
-                var customReplyMode = uow.ServerSettings.GetOrAddByGuildId(response.Result.Channel.GuildId).CustomReplyMode;
+                var customReplyMode = uow.ServerSettings.GetOrAddByGuildId((ulong)response.Result.Channel.GuildId).CustomReplyMode;
                 if (!customReplyMode)
                 {
                     continue;
@@ -148,7 +149,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
         {
             var customReply = currentCustomReply ?? new CustomReply
             {
-                GuildId = channel.GuildId,
+                GuildId = (ulong)channel.GuildId,
                 Message = "",
                 Triggers = new List<List<string>>(),
                 Channels = new List<DiscordChannel>(),
@@ -259,13 +260,13 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                                     oldCustomReply.LastTriggered = DateTime.MinValue;
 
                                     var uow = _db.UnitOfWork();
-                                    uow.CustomReplies.UpdateByGuildId(channel.GuildId, customReply);
+                                    uow.CustomReplies.UpdateByGuildId((ulong)channel.GuildId, customReply);
                                     await uow.SaveAsync().ConfigureAwait(false);
                                 }
                                 else
                                 {
                                     var uow = _db.UnitOfWork();
-                                    var customReplyDb = uow.CustomReplies.AddByGuildId(channel.GuildId, customReply);
+                                    var customReplyDb = uow.CustomReplies.AddByGuildId((ulong)channel.GuildId, customReply);
                                     await uow.SaveAsync().ConfigureAwait(false);
 
                                     customReply.Id = customReplyDb.Id;
@@ -466,7 +467,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                     var msg = viewString;
 
                     var uow = _db.UnitOfWork();
-                    var serverSettings = uow.ServerSettings.GetOrAddByGuildId(channel.GuildId);
+                    var serverSettings = uow.ServerSettings.GetOrAddByGuildId((ulong)channel.GuildId);
                     if (!serverSettings.CustomReplyMode)
                     {
                         msg += warningMsg;
@@ -544,7 +545,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
                 else if (command == "togglecustomreply")
                 {
                     var uow = _db.UnitOfWork();
-                    var customReplyMode = uow.ServerSettings.ToggleCustomReply(channel.GuildId);
+                    var customReplyMode = uow.ServerSettings.ToggleCustomReply((ulong)channel.GuildId);
                     await uow.SaveAsync().ConfigureAwait(false);
                     var toggleMsg = customReplyMode ? "on" : "off";
                     await channel.SendMessageAsync($"Custom reply mode is now {toggleMsg} for this server").ConfigureAwait(false);

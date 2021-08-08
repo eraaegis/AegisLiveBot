@@ -69,7 +69,6 @@ namespace AegisLiveBot.Core.Services.Streaming
             _databaseSyncTimer.Interval = 60000 * DATABASE_SYNC_TIMER_COOLDOWN_MINUTES;
             _databaseSyncTimer.AutoReset = true;
             _databaseSyncTimer.Start();
-
         }
 
         private async void PollTwitchStreams(object Sender, System.Timers.ElapsedEventArgs e)
@@ -195,7 +194,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             uow.LiveUsers.UpdateTwitchName(guildId, userId, twitchName);
             await uow.SaveAsync().ConfigureAwait(false);
 
-            var oldLiveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId).FirstOrDefault(x => x.UserId == userId);
+            var oldLiveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId)?.FirstOrDefault(x => x.UserId == userId);
 
             LiveUser liveUser;
             if (oldLiveUser == null)
@@ -233,7 +232,7 @@ namespace AegisLiveBot.Core.Services.Streaming
 
         public List<LiveUser> GetLiveUsersByGuildId(ulong guildId)
         {
-            return LiveUsers.FirstOrDefault(x => x.Key == guildId).ToList();
+            return LiveUsers.FirstOrDefault(x => x.Key == guildId)?.ToList();
         }
 
         public async Task<bool> TogglePriorityUser(ulong guildId, ulong userId)
@@ -242,7 +241,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             uow.LiveUsers.TogglePriorityUser(guildId, userId);
             await uow.SaveAsync().ConfigureAwait(false);
 
-            var liveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId).FirstOrDefault(x => x.UserId == userId);
+            var liveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId)?.FirstOrDefault(x => x.UserId == userId);
             liveUser.PriorityUser = !liveUser.PriorityUser;
             return liveUser.PriorityUser;
         }
@@ -253,7 +252,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             uow.LiveUsers.ToggleAlertUser(guildId, userId);
             await uow.SaveAsync().ConfigureAwait(false);
 
-            var liveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId).FirstOrDefault(x => x.UserId == userId);
+            var liveUser = LiveUsers.FirstOrDefault(x => x.Key == guildId)?.FirstOrDefault(x => x.UserId == userId);
             liveUser.TwitchAlert = !liveUser.TwitchAlert;
             return liveUser.TwitchAlert;
         }

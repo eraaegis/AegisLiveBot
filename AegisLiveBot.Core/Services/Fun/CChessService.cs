@@ -2,6 +2,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -129,7 +130,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
                         var colorMessage = CurrentPlayer == Player.White ? "White" : "Black";
                         var showMsg = $"{curPlayer.DisplayName}({colorMessage})'s turn to move.";
-                        await _ch.SendFileAsync(imagePath, showMsg).ConfigureAwait(false);
+                        await Extension.SendFileAsync(_ch, imagePath, showMsg).ConfigureAwait(false);
                         ShowBoard = false;
                     }
                     var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _whitePlayer.Id || x.Author.Id == _blackPlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
@@ -185,7 +186,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                 {
                                     var msg = "";
                                     var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                                    await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                    await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                                     //var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
                                     //msg += history;
                                     await Dispose(msg).ConfigureAwait(false);
@@ -207,7 +208,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     else if (command.ToLower() == "showboard")
                     {
                         var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                        await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                        await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                     }
                     else if (command.ToLower() == "history")
                     {
@@ -405,7 +406,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                     var msg = "";
                                     msg = $"{curPlayer.Mention} has won the game!\n";
                                     var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                                    await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                    await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                                     var history = Board.WriteHistory(CurrentPlayer);
                                     msg += history;
                                     await Dispose(msg).ConfigureAwait(false);

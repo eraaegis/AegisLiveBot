@@ -138,7 +138,7 @@ namespace AegisLiveBot.Web.Commands
         public async Task ListLiveUser(CommandContext ctx)
         {
             var liveUsers = _service.GetLiveUsersByGuildId(ctx.Guild.Id);
-            if (liveUsers.Count() == 0)
+            if (liveUsers == null || liveUsers.Count() == 0)
             {
                 await ctx.Channel.SendMessageAsync($"No users currently registered for streaming role!").ConfigureAwait(false);
             } else

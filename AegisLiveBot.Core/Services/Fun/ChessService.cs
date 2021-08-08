@@ -2,6 +2,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -129,7 +130,7 @@ namespace AegisLiveBot.Core.Services.Fun
                         {
                             showMsg = $"Use: promote q/r/n/b to select the promotion.";
                         }
-                        await _ch.SendFileAsync(imagePath, showMsg).ConfigureAwait(false);
+                        await Extension.SendFileAsync(_ch, imagePath, showMsg).ConfigureAwait(false);
                         ShowBoard = false;
                     }
                     var response = await interactivity.WaitForMessageAsync(x => (x.Author.Id == _whitePlayer.Id || x.Author.Id == _blackPlayer.Id) && x.ChannelId == _ch.Id).ConfigureAwait(false);
@@ -195,7 +196,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                             msg = $"Stalemate!\n";
                                         }
                                         var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                                        await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                        await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                                         var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
                                         msg += history;
                                         await Dispose(msg).ConfigureAwait(false);
@@ -273,7 +274,7 @@ namespace AegisLiveBot.Core.Services.Fun
                     } else if (command.ToLower() == "showboard")
                     {
                         var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                        await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                        await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                     } else if (command.ToLower() == "history")
                     {
                         var history = Board.WriteHistory(Player.Draw, gameEnded: false);
@@ -533,7 +534,7 @@ namespace AegisLiveBot.Core.Services.Fun
                                             msg = $"Stalemate!\n";
                                         }
                                         var imagePath = Show(flipBoard ? CurrentPlayer : Player.White);
-                                        await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+                                        await Extension.SendFileAsync(_ch, imagePath).ConfigureAwait(false);
                                         var history = Board.WriteHistory(Board.InCheck ? CurrentPlayer : Player.Draw);
                                         msg += history;
                                         await Dispose(msg).ConfigureAwait(false);

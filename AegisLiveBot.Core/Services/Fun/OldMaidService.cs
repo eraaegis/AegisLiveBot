@@ -2,6 +2,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -277,7 +278,8 @@ namespace AegisLiveBot.Core.Services.Fun
                 }
             }
             image.Save(imagePath, System.Drawing.Imaging.ImageFormat.Png);
-            await _ch.SendFileAsync(imagePath).ConfigureAwait(false);
+            var discordMsg = new DiscordEmbedBuilder { ImageUrl = imagePath };
+            await _ch.SendMessageAsync(discordMsg).ConfigureAwait(false);
         }
         private string GetCenterMsg(int index = -1)
         {
@@ -547,7 +549,8 @@ namespace AegisLiveBot.Core.Services.Fun
                     }
                 }
                 image.Save(imagePath, System.Drawing.Imaging.ImageFormat.Png);
-                await _pCh.SendFileAsync(imagePath).ConfigureAwait(false);
+                var discordMsg = new DiscordEmbedBuilder { ImageUrl = imagePath };
+                await _pCh.SendMessageAsync(discordMsg).ConfigureAwait(false);
             }
             internal async Task Dispose(string msg = "")
             {

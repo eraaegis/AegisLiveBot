@@ -19,6 +19,8 @@ using DSharpPlus.Interactivity;
 using AegisLiveBot.Web.Commands;
 using AegisLiveBot.Core.Services.CustomCrawler;
 using AegisLiveBot.Core.Services.Inhouse;
+using Microsoft.Extensions.Logging;
+using DSharpPlus.Interactivity.Extensions;
 
 namespace AegisLiveBot.Web
 {
@@ -45,8 +47,7 @@ namespace AegisLiveBot.Web
                 Token = _configJson.Token,
                 TokenType = TokenType.Bot,
                 AutoReconnect = true,
-                LogLevel = LogLevel.Debug,
-                UseInternalLogHandler = true
+                MinimumLogLevel = LogLevel.Debug
             };
 
             Client = new DiscordClient(config);
@@ -93,7 +94,7 @@ namespace AegisLiveBot.Web
             SetUpServices();
         }
 
-        private Task OnClientReady(ReadyEventArgs e)
+        private Task OnClientReady(DiscordClient c, ReadyEventArgs e)
         {
             return Task.CompletedTask;
         }
