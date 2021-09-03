@@ -205,7 +205,11 @@ namespace AegisLiveBot.Core.Services.Streaming
                     UserId = userId,
                     TwitchName = twitchName
                 };
-                var liveUsers = LiveUsers.FirstOrDefault(x => x.Key == liveUser.GuildId).ToList();
+                var liveUsers = LiveUsers.FirstOrDefault(x => x.Key == liveUser.GuildId)?.ToList();
+                if (liveUsers == null)
+                {
+                    liveUsers = new List<LiveUser>();
+                }
                 LiveUsers.RemoveAll(x => x.Key == liveUser.GuildId);
                 liveUsers.Add(liveUser);
                 var liveUserGroup = liveUsers.GroupBy(x => x.GuildId).First();
@@ -224,9 +228,13 @@ namespace AegisLiveBot.Core.Services.Streaming
             await uow.SaveAsync().ConfigureAwait(false);
 
             // remove from LiveUsers
-            var liveUsers = LiveUsers.FirstOrDefault(x => x.Key == guildId);
+            var liveUsers = LiveUsers.FirstOrDefault(x => x.Key == guildId)?.ToList();
             LiveUsers.RemoveAll(x => x.Key == guildId);
-            var liveUserGroup = liveUsers.Where(x => x.UserId != userId).GroupBy(x => x.GuildId).First();
+            var liveUserGroup = liveUsers.Where(x => x.UserId != userId).GroupBy(x => x.GuildId)?.First();
+            if (liveUserGroup == null || liveUserGroup.Count() == 0)
+            {
+                return;
+            }
             LiveUsers.Add(liveUserGroup);
         }
 

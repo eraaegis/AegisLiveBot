@@ -23,7 +23,7 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
         private readonly DbService _db;
         private readonly DiscordClient _client;
 
-        private List<IGrouping<ulong, CustomReply>> CustomReplies;
+        private List<IGrouping<ulong, CustomReply>> CustomReplies = new List<IGrouping<ulong, CustomReply>>();
 
         private List<ulong> ActiveEditorsInChannels = new List<ulong>();
 
@@ -271,7 +271,11 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
 
                                     customReply.Id = customReplyDb.Id;
 
-                                    var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
+                                    var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId)?.ToList();
+                                    if (serverCustomReplies == null)
+                                    {
+                                        serverCustomReplies = new List<CustomReply>();
+                                    }
                                     serverCustomReplies.Add(customReply);
                                     CustomReplies.RemoveAll(x => x.Key == customReply.GuildId);
                                     CustomReplies.Add(serverCustomReplies.GroupBy(x => x.GuildId).First());
@@ -452,7 +456,11 @@ namespace AegisLiveBot.Core.Services.CustomCrawler
             var warningMsg = "```WARNING: CUSTOM REPLY MODE IS CURRENTLY OFF FOR THIS SERVER\n";
             warningMsg += "USE THE COMMAND 'togglecustomreply' TO TURN ON CUSTOM REPLY```";
 
-            var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId).ToList();
+            var serverCustomReplies = CustomReplies.FirstOrDefault(x => x.Key == channel.GuildId)?.ToList();
+            if (serverCustomReplies == null)
+            {
+                serverCustomReplies = new List<CustomReply>();
+            }
             var currentPage = 1;
             var maxPage = (serverCustomReplies.Count / 10) + 1;
             var viewPage = true;

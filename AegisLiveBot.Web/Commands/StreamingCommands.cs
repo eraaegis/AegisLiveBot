@@ -114,8 +114,14 @@ namespace AegisLiveBot.Web.Commands
         [RequireUserPermissions(Permissions.ManageRoles)]
         public async Task AddLiveUser(CommandContext ctx, DiscordMember user, string twitchName)
         {
-            await _service.AddOrUpdateTwitchName(ctx.Guild.Id, user.Id, twitchName).ConfigureAwait(false);
-            await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
+            try
+            {
+                await _service.AddOrUpdateTwitchName(ctx.Guild.Id, user.Id, twitchName).ConfigureAwait(false);
+                await ctx.Channel.SendMessageAsync($"{user.DisplayName} has been registered for streaming role with twitch name {twitchName}.").ConfigureAwait(false);
+            } catch (Exception ex)
+            {
+                AegisLog.Log(ex.Message, ex);
+            }
         }
 
         [Command("removeliveuser")]
