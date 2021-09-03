@@ -284,7 +284,6 @@ namespace AegisLiveBot.Core.Services.Streaming
                 if (role == null)
                 {
                     AegisLog.Log($"Role not set for guild #{liveUsersGroup.Key}");
-                    continue;
                 }
 
                 var twitchAlertChannel = guild.GetChannel(serverSetting.TwitchChannelId);
@@ -305,18 +304,22 @@ namespace AegisLiveBot.Core.Services.Streaming
 
                     if (liveUser.StreamStateChanged)
                     {
-                        if (liveUser.HasRole)
+                        if (liveUser.HasRole && role != null)
                         {
                             await user.RevokeRoleAsync(role).ConfigureAwait(false);
                         } else
                         {
                             if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert
-                                && liveUser.LastStreamed.AddHours(STREAM_ALERT_COOLDOWN_HOUR) < DateTime.UtcNow)
+                                && liveUser.LastStreamed.AddHours(STREAM_ALERT_COOLDOWN_HOUR) < DateTime.UtcNow
+                                && twitchAlertChannel != null)
                             {
                                 await twitchAlertChannel.SendMessageAsync($"@everyone streamer is LIVE YO https://www.twitch.tv/{liveUser.TwitchName}").ConfigureAwait(false);
                             }
                             liveUser.LastStreamed = DateTime.UtcNow;
-                            await user.GrantRoleAsync(role).ConfigureAwait(false);
+                            if (role != null)
+                            {
+                                await user.GrantRoleAsync(role).ConfigureAwait(false);
+                            }
                         }
                         liveUser.StreamStateChanged = false;
                         liveUser.HasRole = !liveUser.HasRole;
