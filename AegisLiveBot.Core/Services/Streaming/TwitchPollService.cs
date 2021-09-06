@@ -60,7 +60,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             _accessTokenTimer.Enabled = false;
             _twitchPollTimer = new System.Timers.Timer();
             _twitchPollTimer.Elapsed += PollTwitchStreams;
-            _twitchPollTimer.Interval = 60000;
+            _twitchPollTimer.Interval = 2000;
             _twitchPollTimer.AutoReset = true;
             _twitchPollTimer.Start();
 
@@ -101,6 +101,7 @@ namespace AegisLiveBot.Core.Services.Streaming
                 {
                     try
                     {
+                        _twitchPollTimer.Interval = 60000;
                         IsPolling = true;
                         if (AccessToken == "")
                         {
@@ -230,7 +231,7 @@ namespace AegisLiveBot.Core.Services.Streaming
             // remove from LiveUsers
             var liveUsers = LiveUsers.FirstOrDefault(x => x.Key == guildId)?.ToList();
             LiveUsers.RemoveAll(x => x.Key == guildId);
-            var liveUserGroup = liveUsers.Where(x => x.UserId != userId).GroupBy(x => x.GuildId)?.First();
+            var liveUserGroup = liveUsers.Where(x => x.UserId != userId)?.GroupBy(x => x.GuildId).FirstOrDefault();
             if (liveUserGroup == null || liveUserGroup.Count() == 0)
             {
                 return;
@@ -304,9 +305,12 @@ namespace AegisLiveBot.Core.Services.Streaming
 
                     if (liveUser.StreamStateChanged)
                     {
-                        if (liveUser.HasRole && role != null)
+                        if (liveUser.HasRole)
                         {
-                            await user.RevokeRoleAsync(role).ConfigureAwait(false);
+                            if (role != null)
+                            {
+                                await user.RevokeRoleAsync(role).ConfigureAwait(false);
+                            }
                         } else
                         {
                             if (serverSetting.TwitchAlertMode && liveUser.TwitchAlert
