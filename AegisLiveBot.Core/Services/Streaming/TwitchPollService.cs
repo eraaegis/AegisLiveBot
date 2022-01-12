@@ -430,7 +430,6 @@ namespace AegisLiveBot.Core.Services.Streaming
                     cancellationToken.ThrowIfCancellationRequested();
                     try
                     {
-                        response.EnsureSuccessStatusCode();
                         // if not OK
                         if (response.StatusCode != HttpStatusCode.OK)
                         {
